@@ -1,0 +1,146 @@
+{
+  "nav": {
+    "about": "关于我们",
+    "contacts": "联系方式",
+    "resources": "文件资料",
+    "services": "服务"
+  },
+
+  "pages": {
+    "home": {
+      "title": "RCONS — 审计与咨询",
+      "description": "专业审计咨询公司。IFRS和RSBU审计，税务咨询。"
+    },
+    "about": {
+      "title": "关于公司",
+      "description": "RCONS公司的历史、团队和价值观。经验、执照和专业标准。"
+    },
+    "contacts": {
+      "title": "联系方式",
+      "description": "RCONS的地址、电话和电子邮件。咨询联系表格。"
+    },
+    "resources": {
+      "title": "文件与资料",
+      "description": "官方文件、SRO证书、信息披露和审计师资格。",
+      "documents": {
+        "title": "内部文件",
+        "description": "会计政策、质量标准和内部法规。"
+      },
+      "sro": {
+        "title": "SRO成员资格",
+        "description": "审计师自律组织成员资格证书。"
+      },
+      "disclosure": {
+        "title": "信息披露",
+        "description": "根据审计立法的强制信息披露。"
+      },
+      "qualifications": {
+        "title": "资质证书",
+        "description": "审计师证书和专业资格确认。"
+      }
+    }
+  },
+
+  "services": {
+    "audit": {
+      "title": "审计",
+      "description": "按照俄罗斯和国际标准提供审计服务。",
+      "rsbu": {
+        "title": "RSBU审计",
+        "description": "按照俄罗斯会计准则进行财务报表审计。",
+        "mandatory": {
+          "title": "法定审计",
+          "description": "依法对需要审计的机构进行强制审计。",
+          "content": "法定审计依据《审计活动联邦法》对股份公司、信用机构等进行审计。"
+        },
+        "initiative": {
+          "title": "自愿审计",
+          "description": "由管理层或股东发起的自愿审计。",
+          "content": "自愿审计由股东或管理层决定进行，以获得财务报表可靠性的独立评估。"
+        },
+        "express": {
+          "title": "快速审计",
+          "description": "快速审查以识别关键风险。",
+          "content": "快速审计——对会计和报告进行快速评估，在短时间内发现关键错误。"
+        }
+      },
+      "ifrs": {
+        "title": "IFRS审计",
+        "description": "按照国际财务报告准则进行审计和报表转换。",
+        "audit": {
+          "title": "IFRS财务报表审计",
+          "description": "对按照IFRS编制的财务报表进行独立审计。",
+          "content": "IFRS审计适用于有外国投资者的公司、进入国际资本市场或属于国际集团的公司。"
+        },
+        "transformation": {
+          "title": "财务报表转换",
+          "description": "将财务报表从RSBU转换为IFRS。",
+          "content": "从RSBU到IFRS的转换包括差异分析、资产负债表项目调整和披露准备。"
+        }
+      }
+    },
+    "tax": {
+      "title": "税务咨询",
+      "description": "税务规划、优化和税务审查支持。",
+      "consulting": {
+        "title": "税务咨询",
+        "description": "全面的税务规划和降低税负服务。",
+        "opt": {
+          "title": "税务优化",
+          "description": "合法降低税负的方法：税制选择、优惠、结构优化。",
+          "content": "税务优化——采用合法工具降低税负：选择最优税制、使用优惠政策、合理进行业务结构安排。"
+        }
+      }
+    }
+  },
+
+  "common": {
+    "learnMore": "了解更多",
+    "contactUs": "联系我们",
+    "backToServices": "所有服务",
+    "loading": "加载中...",
+    "search": {
+      "placeholder": "查找服务或栏目...",
+      "noResults": "未找到结果",
+      "results": "搜索结果"
+    }
+  },
+
+  "hero": {
+    "title": "为您的企业提供审计和咨询",
+    "subtitle": "专业审计服务、税务咨询和财务分析",
+    "cta": "我们的服务",
+    "ctaSecondary": "联系我们"
+  },
+
+  "contact": {
+    "form": {
+      "title": "联系我们",
+      "name": "姓名",
+      "email": "电子邮件",
+      "phone": "电话",
+      "company": "公司",
+      "message": "留言",
+      "attachment": "附加文件",
+      "attachmentHint": "PDF、Word、Excel，最大10MB",
+      "submit": "发送",
+      "sending": "发送中...",
+      "success": "消息已发送！我们将在1个工作日内与您联系。",
+      "error": "发送错误。请发邮件至 info@rcons.ru"
+    }
+  },
+
+  "chat": {
+    "title": "RCONS助手",
+    "placeholder": "询问我们的服务...",
+    "greeting": "您好！我可以帮您找到合适的服务或栏目。有什么可以帮您的吗？",
+    "open": "助手",
+    "close": "关闭"
+  },
+
+  "metadata": {
+    "siteName": "RCONS",
+    "defaultTitle": "RCONS — 审计与咨询",
+    "defaultDescription": "专业RSBU和IFRS审计，税务咨询。SRO成员。"
+  }
+}

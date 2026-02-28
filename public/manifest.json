@@ -1,0 +1,47 @@
+{
+  "name": "RCONS - Бухгалтерские и Юридические Услуги",
+  "short_name": "RCONS",
+  "description": "Профессиональные бухгалтерские и юридические услуги. Аудит, налоговый консалтинг, оценка, 1С.",
+  "start_url": "/ru",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "accounting", "legal"],
+  "lang": "ru",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "screenshots": [],
+  "categories": ["business"],
+  "shortcuts": [
+    {
+      "name": "Услуги",
+      "short_name": "Услуги",
+      "description": "Наши услуги",
+      "url": "/ru/services",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Контакты",
+      "short_name": "Контакты",
+      "description": "Связаться с нами",
+      "url": "/ru/contacts",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

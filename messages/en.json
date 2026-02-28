@@ -1,0 +1,146 @@
+{
+  "nav": {
+    "about": "About",
+    "contacts": "Contacts",
+    "resources": "Documents",
+    "services": "Services"
+  },
+
+  "pages": {
+    "home": {
+      "title": "RCONS — Audit & Consulting",
+      "description": "Professional audit and consulting firm. IFRS and RSBU audit, tax consulting."
+    },
+    "about": {
+      "title": "About Us",
+      "description": "History, team and values of RCONS. Experience, licenses and professional standards."
+    },
+    "contacts": {
+      "title": "Contacts",
+      "description": "Address, phone and email of RCONS. Contact form for inquiries."
+    },
+    "resources": {
+      "title": "Documents & Resources",
+      "description": "Official documents, SRO certificates, disclosure and auditor qualifications.",
+      "documents": {
+        "title": "Internal Documents",
+        "description": "Accounting policies, quality standards and internal regulations."
+      },
+      "sro": {
+        "title": "SRO Membership",
+        "description": "Certificate of membership in the self-regulatory organization of auditors."
+      },
+      "disclosure": {
+        "title": "Information Disclosure",
+        "description": "Mandatory disclosure of information per audit legislation."
+      },
+      "qualifications": {
+        "title": "Qualification Certificates",
+        "description": "Auditor certificates and qualification confirmations."
+      }
+    }
+  },
+
+  "services": {
+    "audit": {
+      "title": "Audit",
+      "description": "Audit services under Russian and international standards.",
+      "rsbu": {
+        "title": "RSBU Audit",
+        "description": "Audit of financial statements under Russian accounting standards.",
+        "mandatory": {
+          "title": "Statutory Audit",
+          "description": "Mandatory audit for organizations required by legislation.",
+          "content": "Statutory audit is conducted for joint-stock companies, credit organizations and other entities per the Federal Law on Auditing."
+        },
+        "initiative": {
+          "title": "Voluntary Audit",
+          "description": "Voluntary audit at the initiative of management or owners.",
+          "content": "Voluntary audit is conducted by decision of owners or management to obtain independent assessment of financial statement reliability."
+        },
+        "express": {
+          "title": "Express Audit",
+          "description": "Rapid review to identify key risks quickly.",
+          "content": "Express audit — quick assessment of accounting and reporting to identify critical errors in a short timeframe."
+        }
+      },
+      "ifrs": {
+        "title": "IFRS Audit",
+        "description": "Audit and transformation of financial statements under IFRS.",
+        "audit": {
+          "title": "IFRS Financial Statement Audit",
+          "description": "Independent audit of financial statements prepared in accordance with IFRS.",
+          "content": "IFRS audit is required for companies with foreign investors, those accessing international capital markets or part of international groups."
+        },
+        "transformation": {
+          "title": "Financial Statement Transformation",
+          "description": "Conversion of financial statements from RSBU to IFRS.",
+          "content": "Transformation from RSBU to IFRS includes analysis of differences, adjustment of balance sheet items, and preparation of disclosures."
+        }
+      }
+    },
+    "tax": {
+      "title": "Tax Consulting",
+      "description": "Tax planning, optimization and support during tax audits.",
+      "consulting": {
+        "title": "Tax Consulting",
+        "description": "Comprehensive tax planning and tax burden reduction services.",
+        "opt": {
+          "title": "Tax Optimization",
+          "description": "Legal methods of reducing tax burden: tax system selection, benefits, structuring.",
+          "content": "Tax optimization — application of legal tools to reduce the tax burden: choosing the optimal taxation system, using benefits, smart business structuring."
+        }
+      }
+    }
+  },
+
+  "common": {
+    "learnMore": "Learn More",
+    "contactUs": "Contact Us",
+    "backToServices": "All Services",
+    "loading": "Loading...",
+    "search": {
+      "placeholder": "Find a service or section...",
+      "noResults": "No results found",
+      "results": "Search results"
+    }
+  },
+
+  "hero": {
+    "title": "Audit and Consulting for Your Business",
+    "subtitle": "Professional audit services, tax consulting and financial analysis",
+    "cta": "Our Services",
+    "ctaSecondary": "Contact Us"
+  },
+
+  "contact": {
+    "form": {
+      "title": "Contact Us",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "company": "Company",
+      "message": "Message",
+      "attachment": "Attach file",
+      "attachmentHint": "PDF, Word, Excel up to 10 MB",
+      "submit": "Send",
+      "sending": "Sending...",
+      "success": "Message sent! We will contact you within 1 business day.",
+      "error": "Send error. Please email us at info@rcons.ru"
+    }
+  },
+
+  "chat": {
+    "title": "RCONS Assistant",
+    "placeholder": "Ask about our services...",
+    "greeting": "Hello! I can help you find the right service or section. How can I help?",
+    "open": "Assistant",
+    "close": "Close"
+  },
+
+  "metadata": {
+    "siteName": "RCONS",
+    "defaultTitle": "RCONS — Audit & Consulting",
+    "defaultDescription": "Professional RSBU and IFRS audit, tax consulting. SRO member."
+  }
+}
