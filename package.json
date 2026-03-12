@@ -39,6 +39,9 @@
     "typescript": "^5"
   }
 },
+"scripts": {
+  "lint": "next lint --fix"
+},
 "overrides": {
   "@swc/helpers": "0.5.15"
 }
