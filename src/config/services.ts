@@ -476,3 +476,28 @@ export function getAllTypePaths(): { category: string; type: string }[] {
     category.types.map((type) => ({ category: category.slug, type: type.slug })),
   );
 }
+
+export function getServiceById(serviceId: string): {
+  serviceId: `${string}/${string}`;
+  category: ServiceCategory;
+  type: ServiceType;
+} | null {
+  const [categorySlug, typeSlug] = serviceId.split("/");
+
+  if (!categorySlug || !typeSlug) {
+    return null;
+  }
+
+  const category = getCategoryBySlug(categorySlug);
+  const type = getTypeBySlug(categorySlug, typeSlug);
+
+  if (!category || !type) {
+    return null;
+  }
+
+  return {
+    serviceId: `${category.slug}/${type.slug}`,
+    category,
+    type,
+  };
+}
