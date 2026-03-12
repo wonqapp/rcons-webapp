@@ -1,18 +1,8 @@
 // src/config/services.ts
 // ============================================================
-// ПОЛНЫЙ СТЕК УСЛУГ — 4 уровня иерархии
-//
-// Уровень 1: Category   → slug категории     (audit, tax, ...)
-// Уровень 2: Type       → slug типа/раздела  (rsbu, ifrs, ...)
-// Уровень 3: Service    → id секции на стр.  (mandatory-audit, ...)
-// Уровень 4: Detail     → подпункты/описание (в descriptionKey)
-//
-// URL: /services/[category]/[type]#[service-id]
+// ИЕРАРХИЯ УСЛУГ
+// URL: /services/[category]/[type]
 // ============================================================
-
-// ── ТИПЫ ──────────────────────────────────────────────────
-// src/config/services.ts
-// src/config/services.ts
 
 export interface ServiceType {
   slug: string;
@@ -26,6 +16,16 @@ export interface ServiceCategory {
   descriptionKey: string;
   icon: string;
   types: ServiceType[];
+}
+
+export type ServiceCategorySlug = ServiceCategory["slug"];
+export type ServiceTypeSlug = ServiceType["slug"];
+export type ServiceId = `${ServiceCategorySlug}/${ServiceTypeSlug}`;
+
+export interface ServiceLookup {
+  serviceId: ServiceId;
+  category: ServiceCategory;
+  type: ServiceType;
 }
 
 export const servicesHierarchy: ServiceCategory[] = [
@@ -150,11 +150,6 @@ export const servicesHierarchy: ServiceCategory[] = [
         slug: "intangibles",
         titleKey: "services.valuation.intangibles.title",
         descriptionKey: "services.valuation.intangibles.desc",
-      },
-      {
-        slug: "ma-valuation",
-        titleKey: "services.valuation.ma-valuation.title",
-        descriptionKey: "services.valuation.ma-valuation.desc",
       },
       {
         slug: "real-estate",
@@ -323,36 +318,59 @@ export const servicesHierarchy: ServiceCategory[] = [
   },
 ];
 
-// ─── Поисковый индекс ────────────────────────────────────────
-export const searchIndex = servicesHierarchy.flatMap((cat) =>
-  cat.types.map((type) => ({
+export const searchIndex = servicesHierarchy.flatMap((category) =>
+  category.types.map((type) => ({
     titleKey: type.titleKey,
     descriptionKey: type.descriptionKey,
-    href: `/services/${cat.slug}/${type.slug}`,
-    category: cat.slug,
-    categoryTitleKey: cat.titleKey,
+    href: `/services/${category.slug}/${type.slug}`,
+    category: category.slug,
+    categoryTitleKey: category.titleKey,
     type: type.slug,
     tags: [] as string[],
   })),
 );
 
-// ─── Хелперы ────────────────────────────────────────────────
-export function getCategoryBySlug(slug: string): ServiceCategory | undefined {
-  return servicesHierarchy.find((c) => c.slug === slug);
+export function getCategoryBySlug(slug: string): ServiceCategory | null {
+  return servicesHierarchy.find((category) => category.slug === slug) ?? null;
 }
 
 export function getTypeBySlug(
   categorySlug: string,
   typeSlug: string,
-): ServiceType | undefined {
-  return getCategoryBySlug(categorySlug)?.types.find(
-    (t) => t.slug === typeSlug,
+): ServiceType | null {
+  return (
+    getCategoryBySlug(categorySlug)?.types.find((type) => type.slug === typeSlug) ??
+    null
   );
 }
 
-// Нужен для generateStaticParams в [type]/page.tsx
+export function getAllCategoryPaths(): { category: string }[] {
+  return servicesHierarchy.map((category) => ({ category: category.slug }));
+}
+
 export function getAllTypePaths(): { category: string; type: string }[] {
-  return servicesHierarchy.flatMap((cat) =>
-    cat.types.map((type) => ({ category: cat.slug, type: type.slug })),
+  return servicesHierarchy.flatMap((category) =>
+    category.types.map((type) => ({ category: category.slug, type: type.slug })),
   );
+}
+
+export function getServiceById(serviceId: string): ServiceLookup | null {
+  const [categorySlug, typeSlug] = serviceId.split("/");
+
+  if (!categorySlug || !typeSlug) {
+    return null;
+  }
+
+  const category = getCategoryBySlug(categorySlug);
+  const type = getTypeBySlug(categorySlug, typeSlug);
+
+  if (!category || !type) {
+    return null;
+  }
+
+  return {
+    serviceId: `${category.slug}/${type.slug}` as ServiceId,
+    category,
+    type,
+  };
 }
