@@ -1,13 +1,6 @@
-// src/components/ContactForm.tsx
-// ============================================================
-// ФОРМА ОБРАТНОЙ СВЯЗИ с прикреплением файлов
-// Отправляет на /api/contact → email через Resend/Nodemailer
-// ============================================================
-
-// src/components/ContactForm.tsx
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { siteConfig } from "@/config";
 
@@ -18,6 +11,7 @@ interface Props {
 export default function ContactForm({ preselectedService }: Props) {
   const t = useTranslations("contact.form");
   const tCat = useTranslations("services");
+  const startedAtRef = useRef(Date.now());
 
   const [formData, setFormData] = useState({
     name: "",
@@ -26,14 +20,14 @@ export default function ContactForm({ preselectedService }: Props) {
     company: "",
     message: "",
     service: preselectedService ?? "",
+    consent: false,
+    website: "",
   });
   const [attachment, setAttachment] = useState<File | null>(null);
-  const [status, setStatus] = useState<
-    "idle" | "sending" | "success" | "error"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  function set(field: string, value: string) {
+  function set(field: string, value: string | boolean) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -41,9 +35,9 @@ export default function ContactForm({ preselectedService }: Props) {
     const errs: Record<string, string> = {};
     if (!formData.name.trim()) errs.name = "Обязательное поле";
     if (!formData.email.trim()) errs.email = "Обязательное поле";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      errs.email = "Введите корректный email";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errs.email = "Введите корректный email";
     if (!formData.message.trim()) errs.message = "Обязательное поле";
+    if (!formData.consent) errs.consent = "Нужно согласие";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -53,7 +47,16 @@ export default function ContactForm({ preselectedService }: Props) {
     setStatus("sending");
 
     const fd = new FormData();
-    Object.entries(formData).forEach(([k, v]) => fd.append(k, v));
+    fd.append("name", formData.name);
+    fd.append("email", formData.email);
+    fd.append("phone", formData.phone);
+    fd.append("company", formData.company);
+    fd.append("message", formData.message);
+    fd.append("service", formData.service);
+    fd.append("consent", String(formData.consent));
+    fd.append("website", formData.website);
+    fd.append("formStartedAt", String(startedAtRef.current));
+
     if (attachment) fd.append("attachment", attachment);
 
     try {
@@ -75,10 +78,7 @@ export default function ContactForm({ preselectedService }: Props) {
   }
 
   function getCatLabel(catTitleKey: string): string {
-    // titleKey вида "services.audit.title" → namespace "services", ключ "audit.title"
-    const key = catTitleKey.replace("services.", "") as Parameters<
-      typeof tCat
-    >[0];
+    const key = catTitleKey.replace("services.", "") as Parameters<typeof tCat>[0];
     try {
       return tCat(key);
     } catch {
@@ -87,9 +87,7 @@ export default function ContactForm({ preselectedService }: Props) {
   }
 
   function getTypeLabel(typeTitleKey: string): string {
-    const key = typeTitleKey.replace("services.", "") as Parameters<
-      typeof tCat
-    >[0];
+    const key = typeTitleKey.replace("services.", "") as Parameters<typeof tCat>[0];
     try {
       return tCat(key);
     } catch {
@@ -99,6 +97,17 @@ export default function ContactForm({ preselectedService }: Props) {
 
   return (
     <div className="space-y-4">
+      <input
+        type="text"
+        name="website"
+        value={formData.website}
+        onChange={(e) => set("website", e.target.value)}
+        tabIndex={-1}
+        autoComplete="off"
+        className="hidden"
+        aria-hidden
+      />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label={t("name")} error={errors.name} required>
           <input
@@ -187,9 +196,18 @@ export default function ContactForm({ preselectedService }: Props) {
         </div>
       </Field>
 
-      {status === "error" && (
-        <p className="text-sm text-red-400">{t("error")}</p>
-      )}
+      <label className="flex items-start gap-2 text-xs text-zinc-500">
+        <input
+          type="checkbox"
+          checked={formData.consent}
+          onChange={(e) => set("consent", e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>{t("privacy")}</span>
+      </label>
+      {errors.consent && <p className="text-xs text-red-400">{errors.consent}</p>}
+
+      {status === "error" && <p className="text-sm text-red-400">{t("error")}</p>}
 
       <div className="flex flex-col gap-2">
         <button
@@ -199,13 +217,10 @@ export default function ContactForm({ preselectedService }: Props) {
         >
           {status === "sending" ? t("sending") : t("submit")}
         </button>
-        <p className="text-xs text-zinc-600 text-center">{t("privacy")}</p>
       </div>
     </div>
   );
 }
-
-// ─── Вспомогательные компоненты ──────────────────────────────
 
 function Field({
   label,
@@ -234,8 +249,6 @@ function inputCls(hasError: boolean) {
   return [
     "w-full rounded-lg border bg-zinc-900 px-3 py-2 text-sm text-zinc-100",
     "placeholder-zinc-600 outline-none transition-colors focus:ring-1",
-    hasError
-      ? "border-red-700 focus:ring-red-700"
-      : "border-zinc-700 focus:ring-zinc-500",
+    hasError ? "border-red-700 focus:ring-red-700" : "border-zinc-700 focus:ring-zinc-500",
   ].join(" ");
 }

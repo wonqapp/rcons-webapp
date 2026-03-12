@@ -1,4 +1,3 @@
-"use client";
 // src/components/AiChat.tsx
 // ============================================================
 // ИИ-ПОМОЩНИК — плавающий виджет
@@ -6,7 +5,6 @@
 // Умеет направить пользователя в нужный раздел сайта
 // ============================================================
 
-// src/components/AiChat.tsx
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -52,7 +50,7 @@ export default function AiChat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: next, pathname: window.location.pathname }),
       });
       const data = (await res.json()) as { content?: string };
       setMessages([
