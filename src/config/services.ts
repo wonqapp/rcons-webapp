@@ -340,7 +340,11 @@ const CATEGORY_INTENT_TAGS: Record<string, string[]> = {
   valuation: ["отчёт об оценке", "рыночная стоимость", "оценка активов"],
   "due-diligence": ["due diligence", "m&a", "проверка актива"],
   outsourcing: ["бухгалтерский аутсорсинг", "зарплатный проект", "учёт"],
-  "financial-consulting": ["финансовая модель", "бюджетирование", "финансовый анализ"],
+  "financial-consulting": [
+    "финансовая модель",
+    "бюджетирование",
+    "финансовый анализ",
+  ],
   legal: ["юридическое сопровождение", "арбитраж", "корпоративное право"],
 };
 
@@ -368,7 +372,9 @@ function dedupe(values: string[]): string[] {
   return Array.from(new Set(values.map((v) => v.trim()).filter(Boolean)));
 }
 
-function enrichServiceCategory(rawCategory: RawServiceCategory): ServiceCategory {
+function enrichServiceCategory(
+  rawCategory: RawServiceCategory,
+): ServiceCategory {
   const categoryIntentTags = CATEGORY_INTENT_TAGS[rawCategory.slug] ?? [];
   const categoryIndustryTags = CATEGORY_INDUSTRY_TAGS[rawCategory.slug] ?? [];
 
@@ -394,7 +400,9 @@ function enrichServiceCategory(rawCategory: RawServiceCategory): ServiceCategory
   };
 }
 
-export const servicesHierarchy: ServiceCategory[] = servicesHierarchyRaw.map(enrichServiceCategory);
+export const servicesHierarchy: ServiceCategory[] = servicesHierarchyRaw.map(
+  enrichServiceCategory,
+);
 
 export interface ServiceSearchIndexItem {
   titleKey: string;
@@ -411,21 +419,26 @@ export interface ServiceSearchIndexItem {
   entityType: "service";
 }
 
-export const searchIndex: ServiceSearchIndexItem[] = servicesHierarchy.flatMap((category) =>
-  category.types.map((type) => ({
-    titleKey: type.titleKey,
-    descriptionKey: type.descriptionKey,
-    href: `/services/${category.slug}/${type.slug}`,
-    category: category.slug,
-    categoryTitleKey: category.titleKey,
-    type: type.slug,
-    serviceId: type.serviceId,
-    searchKeywordsRu: type.searchKeywordsRu,
-    intentTags: type.intentTags,
-    industryTags: type.industryTags,
-    tags: dedupe([...type.searchKeywordsRu, ...type.intentTags, ...type.industryTags]),
-    entityType: "service",
-  })),
+export const searchIndex: ServiceSearchIndexItem[] = servicesHierarchy.flatMap(
+  (category) =>
+    category.types.map((type) => ({
+      titleKey: type.titleKey,
+      descriptionKey: type.descriptionKey,
+      href: `/services/${category.slug}/${type.slug}`,
+      category: category.slug,
+      categoryTitleKey: category.titleKey,
+      type: type.slug,
+      serviceId: type.serviceId,
+      searchKeywordsRu: type.searchKeywordsRu,
+      intentTags: type.intentTags,
+      industryTags: type.industryTags,
+      tags: dedupe([
+        ...type.searchKeywordsRu,
+        ...type.intentTags,
+        ...type.industryTags,
+      ]),
+      entityType: "service",
+    })),
 );
 
 export function getCategoryBySlug(slug: string): ServiceCategory | null {
@@ -437,8 +450,9 @@ export function getTypeBySlug(
   typeSlug: string,
 ): ServiceType | null {
   return (
-    getCategoryBySlug(categorySlug)?.types.find((type) => type.slug === typeSlug) ??
-    null
+    getCategoryBySlug(categorySlug)?.types.find(
+      (type) => type.slug === typeSlug,
+    ) ?? null
   );
 }
 
@@ -473,31 +487,9 @@ export function getAllCategoryPaths(): { category: string }[] {
 
 export function getAllTypePaths(): { category: string; type: string }[] {
   return servicesHierarchy.flatMap((category) =>
-    category.types.map((type) => ({ category: category.slug, type: type.slug })),
+    category.types.map((type) => ({
+      category: category.slug,
+      type: type.slug,
+    })),
   );
-}
-
-export function getServiceById(serviceId: string): {
-  serviceId: `${string}/${string}`;
-  category: ServiceCategory;
-  type: ServiceType;
-} | null {
-  const [categorySlug, typeSlug] = serviceId.split("/");
-
-  if (!categorySlug || !typeSlug) {
-    return null;
-  }
-
-  const category = getCategoryBySlug(categorySlug);
-  const type = getTypeBySlug(categorySlug, typeSlug);
-
-  if (!category || !type) {
-    return null;
-  }
-
-  return {
-    serviceId: `${category.slug}/${type.slug}`,
-    category,
-    type,
-  };
 }

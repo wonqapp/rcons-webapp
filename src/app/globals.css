@@ -2,18 +2,33 @@
 @plugin "tailwindcss-animate";
 
 @theme {
-    /* Ссылка на переменные из layout.tsx */
+    /* Шрифты — подключаются из layout.tsx */
     --font-sans: var(--font-sans);
     --font-serif: var(--font-serif);
 
-    --color-bg-l: #f5f5f5; /* same for any white stuff but for bg but doesnt matter  */
-    --color-ww: #f5f5f5; /* for any white stuff */
-    --color-stroke: #e2e0df; /*  for borders */
-    --color-muted: #5e5d59; /*  for grey text/ muted  */
-    --color-bb: #201e1d; /*  for text and any black stuff */
-    --color-bggrey: #edecea; /* for grey bg */
+    /* === Семантические дизайн-токены === */
+    /* Поверхности */
+    --color-surface: #f5f5f5; /* основной белый / светлый фон */
+    --color-surface-alt: #edece8; /* серый фон для секций */
+    /* Текст */
+    --color-text-primary: #201e1d; /* основной тёмный текст */
+    --color-text-muted: #5e5d59; /* вторичный / muted текст */
+    /* Граница */
+    --color-border: #e2e0df; /* стандартная граница */
+    /* Акцент */
+    --color-accent: #201e1d; /* акцентный цвет (тёмный B2B) */
 
-    /* Контейнер */
+    /* === Обратная совместимость — алиасы (не использовать в новом коде) === */
+    --color-bg-l: var(--color-surface);
+    --color-ww: var(--color-surface); /* @deprecated → --color-surface */
+    --color-bb: var(
+        --color-text-primary
+    ); /* @deprecated → --color-text-primary */
+    --color-stroke: var(--color-border);
+    --color-muted: var(--color-text-muted);
+    --color-bggrey: var(--color-surface-alt);
+
+    /* Контентная сетка */
     --breakpoint-xl: 1280px;
     --content-size: 1240px;
     --breakpoint-2xl: none;
@@ -21,37 +36,122 @@
 
 @layer base {
     :root {
-        /* shadcn ожидает эти переменные  наверное я хз а может и ненада но хз нахуй не нужно мне */
+        /* shadcn ожидает эти переменные в формате RGB-каналов */
         --background: 255 255 255;
         --foreground: 28 28 26;
         --popover: 255 255 255;
         --popover-foreground: 28 28 26;
-        --border: 226 224 223; /* твой --color-stroke */
-        --muted-foreground: 94 93 89; /* твой --color-muted */
-        --accent: 245 245 245; /* твой --color-bg-l */
+        --border: 226 224 223; /* = --color-border */
+        --muted-foreground: 94 93 89; /* = --color-text-muted */
+        --accent: 245 245 245; /* = --color-surface */
         --accent-foreground: 28 28 26;
         --ring: 226 224 223;
         --radius: 0.5rem;
     }
-    * {
-        border-color: var(
-            --color-stroke
-        ); /* вообще по идее я хотел типа сделать глобальный цвет border а когда нужен другой просто делаю !... */
+
+    /* Глобальный дефолт для border-color — без этого Tailwind использует currentColor (= чёрный) */
+    *,
+    ::before,
+    ::after {
+        border-color: var(--color-border);
     }
+
     body {
-        /* Используем переменную темы */
-        @apply bg-bg-l text-[--color-bb] antialiased; /* базовый фон и везде текст цвет */
+        @apply bg-[--color-surface] text-[--color-text-primary] antialiased;
         font-family: var(--font-sans);
         font-feature-settings: "cv01", "ss01";
         letter-spacing: -0.01em;
     }
+
+    /* Нормализация ссылок */
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
 }
 
 @layer components {
+    /* Макеты */
     .main-layout {
-        @apply mx-auto w-full max-w-(--breakpoint-xl); /* карчое логика такая что я как бы делаю 1280 везде базово чтобы пару секций могло выступть */
+        @apply mx-auto w-full max-w-(--breakpoint-xl);
     }
     .content-layout {
-        @apply mx-auto w-full max-w-(--content-size) px-5; /* а для всего что не должно выпирать ну для всего контента я делаю вот это  */
+        @apply mx-auto w-full max-w-(--content-size) px-5;
+    }
+
+    /* === Базовая граница (заменяет глобальное * { border-color }) === */
+    .border-base {
+        border-color: var(--color-border);
+    }
+
+    /* === Интерактивные состояния (B2B, сдержанный стиль) === */
+
+    /* Кнопка-ссылка / nav-link */
+    .link-base {
+        @apply transition-colors duration-150;
+        color: var(--color-text-muted);
+
+        &:hover {
+            color: var(--color-text-primary);
+        }
+        &:focus-visible {
+            outline: 2px solid var(--color-accent);
+            outline-offset: 2px;
+            border-radius: 2px;
+        }
+    }
+
+    /* Карточка с hover */
+    .card-interactive {
+        @apply transition-shadow duration-200 border border-[--color-border] rounded-lg bg-white;
+
+        &:hover {
+            box-shadow: 0 4px 16px rgb(32 30 29 / 0.08);
+            border-color: rgb(32 30 29 / 0.15);
+        }
+        &:focus-within {
+            outline: 2px solid var(--color-accent);
+            outline-offset: 2px;
+        }
+    }
+
+    /* Базовая кнопка (дополняет shadcn Button) */
+    .btn-primary {
+        @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium
+               bg-[--color-text-primary] text-[--color-surface]
+               transition-all duration-150;
+
+        &:hover {
+            opacity: 0.88;
+        }
+        &:active {
+            transform: translateY(1px);
+        }
+        &:focus-visible {
+            outline: 2px solid var(--color-accent);
+            outline-offset: 3px;
+        }
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    }
+
+    .btn-outline {
+        @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium
+               border border-[--color-border] text-[--color-text-primary] bg-transparent
+               transition-all duration-150;
+
+        &:hover {
+            background: var(--color-surface-alt);
+            border-color: rgb(32 30 29 / 0.3);
+        }
+        &:active {
+            transform: translateY(1px);
+        }
+        &:focus-visible {
+            outline: 2px solid var(--color-accent);
+            outline-offset: 3px;
+        }
     }
 }

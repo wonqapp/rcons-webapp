@@ -118,7 +118,7 @@ export default function Navbar() {
           <div className="flex items-center gap-10">
             <button
               onClick={() => setSearchOpen((v) => !v)}
-              className="hidden md:flex text-bb hover:text-muted transition-colors bg-transparent border-none cursor-pointer p-0"
+              className="hidden md:flex text-bb hover:text-muted transition-colors  bg-transparent border-none cursor-pointer p-0"
               aria-label="Поиск"
             >
               <SearchIcon size={16} strokeWidth={1.8} />
@@ -241,9 +241,9 @@ export default function Navbar() {
       </div>
 
       {searchOpen && (
-        <div className="border-t">
+        <div className="border-t bg-accent">
           <div className="main-layout">
-            <div className="content-layout py-3">
+            <div className="content-layout py-3 ">
               <Search onClose={() => setSearchOpen(false)} />
             </div>
           </div>
