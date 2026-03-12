@@ -4,24 +4,40 @@
 // model: "fixed" | "from" | "monthly" | "individual"
 // ============================================================
 
-export type PriceModel = "fixed" | "from" | "monthly" | "individual";
+export type PricingMode = "fixed" | "from" | "on_request";
+export type PriceUnit = "project" | "month" | "hour";
 
 export interface PriceTier {
-  label: string; // "Малый бизнес (до 400 млн)"
-  price: number; // числовое значение
-  model: PriceModel;
+  label: string;
+  pricingMode: PricingMode;
+  amount?: number;
+  currency: "RUB";
+  unit?: PriceUnit;
 }
 
 export interface ServicePrice {
-  slug: string; // category/type — совпадает с href
+  serviceId: string; // category/type — совпадает с href
   tiers: PriceTier[];
   note?: string; // доп. сноска для конкретной услуги
 }
 
-export const pricing: ServicePrice[] = [
+interface LegacyPriceTier {
+  label: string;
+  price: number;
+  model: "fixed" | "from" | "monthly" | "individual";
+}
+
+interface LegacyServicePrice {
+  serviceId: string;
+  tiers: LegacyPriceTier[];
+  note?: string;
+}
+
+const pricingLegacy: LegacyServicePrice[] = [
+
   // ─── АУДИТ ───────────────────────────────────────────────
   {
-    slug: "audit/mandatory-rsbu",
+    serviceId: "audit/mandatory-rsbu",
     tiers: [
       {
         label: "Малый бизнес (выручка до 400 млн ₽)",
@@ -42,7 +58,7 @@ export const pricing: ServicePrice[] = [
     note: "Объём работ определяется после бесплатной предварительной экспертизы",
   },
   {
-    slug: "audit/mandatory-gup",
+    serviceId: "audit/mandatory-gup",
     tiers: [
       { label: "ГУП / МУП", price: 220_000, model: "from" },
       {
@@ -53,35 +69,35 @@ export const pricing: ServicePrice[] = [
     ],
   },
   {
-    slug: "audit/mandatory-nko",
+    serviceId: "audit/mandatory-nko",
     tiers: [{ label: "НКО, фонд, ассоциация", price: 120_000, model: "from" }],
   },
   {
-    slug: "audit/mandatory-developer",
+    serviceId: "audit/mandatory-developer",
     tiers: [{ label: "Застройщик (214-ФЗ)", price: 220_000, model: "from" }],
   },
   {
-    slug: "audit/initiative",
+    serviceId: "audit/initiative",
     tiers: [{ label: "Инициативный аудит", price: 150_000, model: "from" }],
   },
   {
-    slug: "audit/special-assignment",
+    serviceId: "audit/special-assignment",
     tiers: [
       { label: "Аудит по специальному заданию", price: 80_000, model: "from" },
     ],
   },
   {
-    slug: "audit/tax-audit",
+    serviceId: "audit/tax-audit",
     tiers: [{ label: "Налоговый аудит", price: 120_000, model: "from" }],
   },
   {
-    slug: "audit/strategic-programs",
+    serviceId: "audit/strategic-programs",
     tiers: [
       { label: "Аудит программы стратразвития", price: 150_000, model: "from" },
     ],
   },
   {
-    slug: "audit/pif",
+    serviceId: "audit/pif",
     tiers: [
       {
         label: "Аудит ПИФ / управляющей компании",
@@ -91,7 +107,7 @@ export const pricing: ServicePrice[] = [
     ],
   },
   {
-    slug: "audit/pension",
+    serviceId: "audit/pension",
     tiers: [
       {
         label: "Подтверждение пенсионных накоплений",
@@ -103,30 +119,30 @@ export const pricing: ServicePrice[] = [
 
   // ─── НАЛОГИ ──────────────────────────────────────────────
   {
-    slug: "tax/consulting",
+    serviceId: "tax/consulting",
     tiers: [
       { label: "Устная консультация (1 час)", price: 6_000, model: "fixed" },
       { label: "Письменное заключение", price: 25_000, model: "from" },
     ],
   },
   {
-    slug: "tax/subscription",
+    serviceId: "tax/subscription",
     tiers: [{ label: "Налоговый абонемент", price: 45_000, model: "monthly" }],
     note: "Объём услуг по абонементу фиксируется в договоре",
   },
   {
-    slug: "tax/pre-inspection",
+    serviceId: "tax/pre-inspection",
     tiers: [{ label: "Предпроверочный анализ", price: 80_000, model: "from" }],
   },
   {
-    slug: "tax/inspection-support",
+    serviceId: "tax/inspection-support",
     tiers: [
       { label: "Камеральная проверка", price: 50_000, model: "from" },
       { label: "Выездная проверка", price: 120_000, model: "from" },
     ],
   },
   {
-    slug: "tax/pre-trial",
+    serviceId: "tax/pre-trial",
     tiers: [
       {
         label: "Досудебное обжалование решений ФНС",
@@ -136,17 +152,17 @@ export const pricing: ServicePrice[] = [
     ],
   },
   {
-    slug: "tax/vat-refund",
+    serviceId: "tax/vat-refund",
     tiers: [{ label: "Возмещение НДС", price: 80_000, model: "from" }],
   },
   {
-    slug: "tax/restructuring",
+    serviceId: "tax/restructuring",
     tiers: [
       { label: "Налоговая реструктуризация", price: 0, model: "individual" },
     ],
   },
   {
-    slug: "tax/declaration",
+    serviceId: "tax/declaration",
     tiers: [
       {
         label: "Декларация 3-НДФЛ (стандартная)",
@@ -164,26 +180,20 @@ export const pricing: ServicePrice[] = [
 
   // ─── ОЦЕНКА ──────────────────────────────────────────────
   {
-    slug: "valuation/business-valuation",
+    serviceId: "valuation/business-valuation",
     tiers: [
       { label: "Малый бизнес", price: 80_000, model: "from" },
       { label: "Средний и крупный бизнес", price: 200_000, model: "from" },
     ],
   },
   {
-    slug: "valuation/intangibles",
+    serviceId: "valuation/intangibles",
     tiers: [
       { label: "Оценка НМА (бренд, ПО, патент)", price: 70_000, model: "from" },
     ],
   },
   {
-    slug: "valuation/ma-valuation",
-    tiers: [
-      { label: "Оценка для M&A / инвестора", price: 120_000, model: "from" },
-    ],
-  },
-  {
-    slug: "valuation/real-estate",
+    serviceId: "valuation/real-estate",
     tiers: [
       {
         label: "Оценка объекта коммерческой недвижимости",
@@ -193,19 +203,19 @@ export const pricing: ServicePrice[] = [
     ],
   },
   {
-    slug: "valuation/land",
+    serviceId: "valuation/land",
     tiers: [
       { label: "Оценка земельного участка", price: 20_000, model: "from" },
     ],
   },
   {
-    slug: "valuation/vehicles",
+    serviceId: "valuation/vehicles",
     tiers: [
       { label: "Оценка транспортного средства", price: 8_000, model: "from" },
     ],
   },
   {
-    slug: "valuation/equipment",
+    serviceId: "valuation/equipment",
     tiers: [
       {
         label: "Оценка оборудования (до 10 ед.)",
@@ -220,7 +230,7 @@ export const pricing: ServicePrice[] = [
     ],
   },
   {
-    slug: "valuation/cadastral",
+    serviceId: "valuation/cadastral",
     tiers: [
       {
         label: "Оспаривание кадастровой стоимости",
@@ -231,7 +241,7 @@ export const pricing: ServicePrice[] = [
     note: "Включает отчёт об оценке и сопровождение в комиссии Росреестра или суде",
   },
   {
-    slug: "valuation/bank-valuation",
+    serviceId: "valuation/bank-valuation",
     tiers: [
       {
         label: "Оценка для банка (залог / кредитование)",
@@ -241,38 +251,38 @@ export const pricing: ServicePrice[] = [
     ],
   },
   {
-    slug: "valuation/damage",
+    serviceId: "valuation/damage",
     tiers: [{ label: "Оценка ущерба / убытков", price: 80_000, model: "from" }],
   },
 
   // ─── DUE DILIGENCE ───────────────────────────────────────
   {
-    slug: "due-diligence/financial-dd",
+    serviceId: "due-diligence/financial-dd",
     tiers: [
       { label: "Малый бизнес", price: 200_000, model: "from" },
       { label: "Средний и крупный бизнес", price: 500_000, model: "from" },
     ],
   },
   {
-    slug: "due-diligence/tax-dd",
+    serviceId: "due-diligence/tax-dd",
     tiers: [
       { label: "Налоговый Due Diligence", price: 180_000, model: "from" },
     ],
   },
   {
-    slug: "due-diligence/legal-dd",
+    serviceId: "due-diligence/legal-dd",
     tiers: [
       { label: "Юридический Due Diligence", price: 200_000, model: "from" },
     ],
   },
   {
-    slug: "due-diligence/operational-dd",
+    serviceId: "due-diligence/operational-dd",
     tiers: [
       { label: "Операционный Due Diligence", price: 180_000, model: "from" },
     ],
   },
   {
-    slug: "due-diligence/complex-dd",
+    serviceId: "due-diligence/complex-dd",
     tiers: [
       {
         label: "Комплексный DD (все направления)",
@@ -285,7 +295,7 @@ export const pricing: ServicePrice[] = [
 
   // ─── АУТСОРСИНГ ──────────────────────────────────────────
   {
-    slug: "outsourcing/full-accounting",
+    serviceId: "outsourcing/full-accounting",
     tiers: [
       { label: "До 50 операций в месяц", price: 18_000, model: "monthly" },
       { label: "50–200 операций в месяц", price: 35_000, model: "monthly" },
@@ -293,7 +303,7 @@ export const pricing: ServicePrice[] = [
     ],
   },
   {
-    slug: "outsourcing/payroll",
+    serviceId: "outsourcing/payroll",
     tiers: [
       { label: "До 10 сотрудников", price: 12_000, model: "monthly" },
       { label: "11–30 сотрудников", price: 20_000, model: "monthly" },
@@ -301,7 +311,7 @@ export const pricing: ServicePrice[] = [
     ],
   },
   {
-    slug: "outsourcing/restoration",
+    serviceId: "outsourcing/restoration",
     tiers: [
       {
         label: "Восстановление учёта (за период)",
@@ -312,11 +322,11 @@ export const pricing: ServicePrice[] = [
     note: "Стоимость зависит от объёма и состояния документов",
   },
   {
-    slug: "outsourcing/zero-reporting",
+    serviceId: "outsourcing/zero-reporting",
     tiers: [{ label: "Нулевая отчётность", price: 5_000, model: "monthly" }],
   },
   {
-    slug: "outsourcing/fsbu",
+    serviceId: "outsourcing/fsbu",
     tiers: [
       {
         label: "Переход на новые ФСБУ (методология)",
@@ -326,7 +336,7 @@ export const pricing: ServicePrice[] = [
     ],
   },
   {
-    slug: "outsourcing/accounting-policy",
+    serviceId: "outsourcing/accounting-policy",
     tiers: [
       { label: "Разработка учётной политики", price: 40_000, model: "from" },
     ],
@@ -334,13 +344,13 @@ export const pricing: ServicePrice[] = [
 
   // ─── ФИНАНСОВЫЙ КОНСАЛТИНГ ───────────────────────────────
   {
-    slug: "financial-consulting/analysis",
+    serviceId: "financial-consulting/analysis",
     tiers: [
       { label: "Финансовый анализ компании", price: 80_000, model: "from" },
     ],
   },
   {
-    slug: "financial-consulting/business-planning",
+    serviceId: "financial-consulting/business-planning",
     tiers: [
       {
         label: "Бизнес-план (для банка / инвестора)",
@@ -350,11 +360,11 @@ export const pricing: ServicePrice[] = [
     ],
   },
   {
-    slug: "financial-consulting/modeling",
+    serviceId: "financial-consulting/modeling",
     tiers: [{ label: "Финансовая модель", price: 100_000, model: "from" }],
   },
   {
-    slug: "financial-consulting/management-reporting",
+    serviceId: "financial-consulting/management-reporting",
     tiers: [
       {
         label: "Разработка управленческой отчётности",
@@ -366,26 +376,26 @@ export const pricing: ServicePrice[] = [
 
   // ─── ЮРИДИЧЕСКИЕ УСЛУГИ ──────────────────────────────────
   {
-    slug: "legal/legal-outsourcing",
+    serviceId: "legal/legal-outsourcing",
     tiers: [
       { label: "Юридический аутсорсинг", price: 40_000, model: "monthly" },
     ],
   },
   {
-    slug: "legal/litigation",
+    serviceId: "legal/litigation",
     tiers: [
       { label: "Арбитраж — первая инстанция", price: 120_000, model: "from" },
       { label: "Апелляция / кассация", price: 80_000, model: "from" },
     ],
   },
   {
-    slug: "legal/bankruptcy",
+    serviceId: "legal/bankruptcy",
     tiers: [
       { label: "Банкротство / ликвидация", price: 200_000, model: "from" },
     ],
   },
   {
-    slug: "legal/corporate",
+    serviceId: "legal/corporate",
     tiers: [
       {
         label: "Корпоративная сделка (структурирование)",
@@ -397,21 +407,54 @@ export const pricing: ServicePrice[] = [
 ];
 
 // Хелперы
-export function getPricing(
-  categorySlug: string,
-  typeSlug: string,
-): ServicePrice | undefined {
-  return pricing.find((p) => p.slug === `${categorySlug}/${typeSlug}`);
+function normalizePricingMode(model: LegacyPriceTier["model"]): PricingMode {
+  if (model === "individual") return "on_request";
+  if (model === "monthly") return "from";
+  return model;
 }
 
-export function formatPrice(price: number, model: PriceModel): string {
-  if (model === "individual" || price === 0) return "Индивидуально";
+function normalizeTier(tier: LegacyPriceTier): PriceTier {
+  return {
+    label: tier.label,
+    pricingMode: normalizePricingMode(tier.model),
+    amount: tier.model === "individual" ? undefined : tier.price,
+    currency: "RUB",
+    unit: tier.model === "monthly" ? "month" : "project",
+  };
+}
+
+export const pricing: ServicePrice[] = pricingLegacy.map((item) => ({
+  serviceId: item.serviceId,
+  note: item.note,
+  tiers: item.tiers.map(normalizeTier),
+}));
+
+export function getPricingByServiceId(serviceId: string): ServicePrice | null {
+  return pricing.find((p) => p.serviceId === serviceId) ?? null;
+}
+
+export function getPricing(categorySlug: string, typeSlug: string): ServicePrice | null {
+  return getPricingByServiceId(`${categorySlug}/${typeSlug}`);
+}
+
+export function formatPrice(tier: PriceTier): string {
+  if (tier.pricingMode === "on_request" || typeof tier.amount !== "number") {
+    return "По запросу";
+  }
+
   const formatted = new Intl.NumberFormat("ru-RU", {
     style: "currency",
-    currency: "RUB",
+    currency: tier.currency,
     maximumFractionDigits: 0,
-  }).format(price);
-  if (model === "from") return `от ${formatted}`;
-  if (model === "monthly") return `от ${formatted} / мес`;
-  return formatted; // fixed
+  }).format(tier.amount);
+
+  if (tier.pricingMode === "from") {
+    return tier.unit === "month" ? `от ${formatted} / мес` : `от ${formatted}`;
+  }
+
+  if (tier.unit === "hour") {
+    return `${formatted} / час`;
+  }
+
+  return formatted;
 }
