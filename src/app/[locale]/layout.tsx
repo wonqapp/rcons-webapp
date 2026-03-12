@@ -4,107 +4,103 @@
 // Подключает: Navbar, AiChat виджет, i18n провайдер, metadata
 // ============================================================
 
+// src/app/[locale]/layout.tsx
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
+import {
+  getMessages,
+  getTranslations,
+  setRequestLocale,
+} from "next-intl/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Inter, Noto_Serif } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import { siteConfig } from "@/config";
 import Navbar from "@/components/navbar";
 import AiChat from "@/components/AiChat";
-import "@/app/globals.css"
+import "@/app/globals.css";
+
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const noto_serif = Noto_Serif({
+  subsets: ["latin", "cyrillic"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-serif",
+  display: "swap",
+});
 
 interface Props {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }
 
-// ============================================================
-// generateStaticParams — говорим Next.js какие локали генерировать
-// ============================================================
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-// ============================================================
-// generateMetadata — дефолтные SEO мета-теги для всего сайта
-// Каждая страница может переопределить через свой generateMetadata
-// ============================================================
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
-
   return {
-    title: {
-      default: t("defaultTitle"),
-      template: `%s | ${t("siteName")}`, // "О компании | RCONS"
-    },
+    title: { default: t("defaultTitle"), template: `%s — ${t("siteName")}` },
     description: t("defaultDescription"),
     metadataBase: new URL(siteConfig.url),
-    openGraph: {
-      type: "website",
-      siteName: t("siteName"),
-      locale,
-    },
-    robots: {
-      index: true,
-      follow: true,
-    },
-    // Alternate language tags для SEO (важно для многоязычных сайтов)
-    alternates: {
-      languages: Object.fromEntries(
-        siteConfig.locales.map((loc) => [loc, `${siteConfig.url}/${loc}`])
-      ),
-    },
   };
 }
 
-// ============================================================
-// LAYOUT КОМПОНЕНТ
-// ============================================================
 export default async function LocaleLayout({ children, params }: Props) {
   const { locale } = await params;
-
-  // Проверяем что локаль поддерживается
-  if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
+  if (!routing.locales.includes(locale as (typeof routing.locales)[number]))
     notFound();
-  }
 
-  // Включаем статическую генерацию
-  setRequestLocale(locale);
-
-  // Загружаем переводы для клиентских компонентов
   const messages = await getMessages();
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body className="min-h-screen bg-background font-sans antialiased">
+    /* 1. Добавляем обе переменные в className html */
+    <html
+      lang={locale}
+      suppressHydrationWarning
+      className={`${inter.variable} ${noto_serif.variable}`}
+    >
+      {/* 2. Убираем инлайновые стили с body, всё управление теперь в globals.css */}
+      <body className="antialiased bg-bg-l">
         <NextIntlClientProvider messages={messages}>
-          {/* Навигация */}
           <Navbar />
-
-          {/* Основной контент */}
-          <div className="min-h-[calc(100vh-4rem)]">
-            {children}
-          </div>
-
-          {/* Футер — TODO: вынести в отдельный компонент */}
-          <footer className="border-t py-8 mt-16">
-            <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-              <p>© {new Date().getFullYear()} RCONS. Все права защищены.</p>
-              <p className="mt-1">
-                <a href={`/${locale}/resources/disclosure`} className="hover:underline">
+          {children}
+          {/* 3. Рекомендую заменить инлайновый footer на Tailwind классы:
+              className="border-t border-[#dddbd7] mt-20 py-7" */}
+          <footer className="border-t border-[--color-border-light] mt-20 py-7">
+            <div className="main-layout flex justify-between items-center">
+              <span className="text-[12px] text-[#aaa]">
+                © {new Date().getFullYear()} RCONS
+              </span>
+              <div className="flex gap-5">
+                <a
+                  href={`/${locale}/resources/disclosure`}
+                  className="text-[12px] text-[#aaa]"
+                >
                   Раскрытие информации
                 </a>
-                {" · "}
-                <a href={`/${locale}/resources/sro`} className="hover:underline">
+                <a
+                  href={`/${locale}/resources/sro`}
+                  className="text-[12px] text-[#aaa]"
+                >
                   СРО
                 </a>
-              </p>
+                <a
+                  href="mailto:info@rcons.ru"
+                  className="text-[12px] text-[#aaa]"
+                >
+                  info@rcons.ru
+                </a>
+              </div>
             </div>
           </footer>
-
-          {/* ИИ-помощник — плавающий виджет */}
           <AiChat />
         </NextIntlClientProvider>
       </body>

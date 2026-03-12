@@ -1,103 +1,83 @@
 // src/app/[locale]/services/[category]/[type]/page.tsx
-// ============================================================
-// СТРАНИЦА ТИПА УСЛУГ (напр. /services/audit/rsbu)
-// Каждая услуга = секция с якорем #service-id
-// ============================================================
-// ⚠️  ВАЖНО: переименуй папку [service] → [type] в проводнике
-// ============================================================
-
-import { setRequestLocale } from "next-intl/server";
-import Link from "next/link";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
-import type { Metadata } from "next";
-import { getTypeBySlug, getAllTypePaths } from "@/config/services";
+import Link from "next/link";
+import { getCategoryBySlug, getTypeBySlug } from "@/config/services";
+import { getPricing, formatPrice } from "@/config/pricing";
+import ServiceSidebar from "@/components/ServiceSidebar";
+import PriceCard from "@/components/PriceCard";
+import Image from "next/image";
 
-interface Props {
+export default async function TypePage({
+  params,
+}: {
   params: Promise<{ locale: string; category: string; type: string }>;
-}
-
-// Генерируем все комбинации category+type статически
-export function generateStaticParams() {
-  return getAllTypePaths();
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { category, type } = await params;
-  const t = getTypeBySlug(category, type);
-  if (!t) return {};
-  return {
-    title: t.titleKey, // TODO: перевести через getTranslations
-  };
-}
-
-export default async function TypePage({ params }: Props) {
+}) {
   const { locale, category, type } = await params;
   setRequestLocale(locale);
 
+  const catData = getCategoryBySlug(category);
   const typeData = getTypeBySlug(category, type);
-  if (!typeData) notFound();
+  const priceData = getPricing(category, type);
+  if (!catData || !typeData) notFound();
+
+  const t = await getTranslations({ locale });
+  const tiers =
+    priceData?.tiers.map((tier) => {
+      const match = tier.label.match(/(.*)\s\((.*)\)/);
+      return {
+        label: match ? match[1] : tier.label,
+        hint: match ? match[2] : undefined,
+        price: formatPrice(tier.price, tier.model),
+      };
+    }) || [];
 
   return (
-    <main className="container mx-auto px-4 py-16 max-w-4xl">
+    <main className="main-layout mx-auto  pb-24 px-0!  ">
+      {/* Hero Section: убрали px-9, добавили p-8/p-12 для внутреннего контента */}
+      <section className="relative w-full h-100  overflow-hidden bg-[#0a0a0a]  ">
+        <Image
+          src="/images/audit_city.jpg"
+          alt="Background"
+          fill
+          priority
+          className="object-cover z-0" // object-cover заменяет background-size: cover
+        />
 
-      {/* Хлебные крошки */}
-      <nav className="text-sm text-muted-foreground mb-6 flex gap-2">
-        <Link href={`/${locale}/services`} className="hover:underline">Услуги</Link>
-        <span>/</span>
-        <Link href={`/${locale}/services/${category}`} className="hover:underline capitalize">{category}</Link>
-        <span>/</span>
-        <span>{typeData.titleKey}</span>
-      </nav>
+        {/* Затемнение (Overlay), чтобы текст читался */}
+        <div className="absolute inset-0 bg-purple-950/10 z-10" />
 
-      {/* Заголовок страницы */}
-      <h1 className="text-3xl font-bold mb-4">{typeData.titleKey}</h1>
+        <div className="content-layout relative h-full flex flex-col justify-between content-layout pt-8 z-10">
+          <nav className="flex items-center gap-2 text-[11px]  uppercase tracking-[0.2em] text-white/40">
+            <Link href="/" className="hover:text-white transition-colors">
+              Главная
+            </Link>
+            <span>/</span>
+            <Link
+              href={`/${locale}/services`}
+              className="hover:text-white transition-colors"
+            >
+              Услуги
+            </Link>
+            <span>/</span>
+            <span className="text-white/60">{t(catData.titleKey as any)}</span>
+          </nav>
+          <h1 className="text-6xl md:text-6xl  font-sans text-ww  md:max-w-[70%]  ">
+            {t(typeData.titleKey as any)}
+          </h1>
+        </div>
+      </section>
 
-      {/* Быстрая навигация по секциям */}
-      <nav className="flex flex-wrap gap-2 mb-12 p-4 bg-muted rounded-lg">
-        {typeData.services.map((service) => (
-          <a
-            key={service.id}
-            href={`#${service.id}`}
-            className="text-sm px-3 py-1 rounded-full bg-background border hover:border-primary hover:text-primary transition-colors"
-          >
-            {service.titleKey}
-          </a>
-        ))}
-      </nav>
-
-      {/* Секции услуг */}
-      <div className="space-y-16">
-        {typeData.services.map((service) => (
-          <section key={service.id} id={service.id} className="scroll-mt-24">
-            <h2 className="text-2xl font-semibold mb-3">{service.titleKey}</h2>
-            <p className="text-muted-foreground mb-6">{service.descriptionKey}</p>
-
-            {/* Подпункты (если есть) */}
-            {service.details && service.details.length > 0 && (
-              <ul className="space-y-2 border-l-2 border-primary/20 pl-4">
-                {service.details.map((detail, i) => (
-                  <li key={i} className="text-sm text-muted-foreground">
-                    {detail.titleKey}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {/* CTA */}
-            <div className="mt-6">
-              <Link
-                href={`/${locale}/contacts`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:opacity-90 transition-opacity"
-              >
-                Получить консультацию →
-              </Link>
-            </div>
-
-            <hr className="mt-16 border-border" />
-          </section>
-        ))}
+      {/* Сетка контента: уменьшили gap до 12-16, чтобы Sidebar не уезжал слишком далеко */}
+      <div className="content-layout grid lg:grid-cols-[1fr_300px] gap-12 lg:gap-16 items-start mt-2 md:mt-12">
+        <div className="space-y-16 pt-8">
+          <p className="text-[18px]  font-serif leading-relaxed opacity-90">
+            {t(typeData.descriptionKey as any)}
+          </p>
+          <PriceCard tiers={tiers} note={priceData?.note} />
+        </div>
+        <ServiceSidebar category={catData} activeTypeSlug={type} />
       </div>
-
     </main>
   );
 }

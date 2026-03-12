@@ -4,78 +4,101 @@
 // Показывает все типы внутри категории
 // ============================================================
 
-import { setRequestLocale, getTranslations } from "next-intl/server";
+// src/app/[locale]/services/[category]/page.tsx
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Metadata } from "next";
-import { getCategoryBySlug, servicesHierarchy } from "@/config/services";
+import { siteConfig } from "@/config";
+import { getCategoryBySlug } from "@/config/services";
 
 interface Props {
-  params: Promise<{ locale: string; category: string }>;
+  params: Promise<{ locale: string; category: string; type: string }>;
 }
 
-// Говорим Next.js какие категории генерировать статически
-export function generateStaticParams() {
-  return servicesHierarchy.map((cat) => ({ category: cat.slug }));
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale, category } = await params;
-  const cat = getCategoryBySlug(category);
-  if (!cat) return {};
-  const t = await getTranslations({ locale, namespace: cat.titleKey });
-  return { title: String(t) };
-}
-
-export default async function CategoryPage({ params }: Props) {
-  const { locale, category } = await params;
+export default async function TypePage({ params }: Props) {
+  const { locale, category, type } = await params;
   setRequestLocale(locale);
 
-  const cat = getCategoryBySlug(category);
-  if (!cat) notFound();
+  const catData = getCategoryBySlug(category);
+  const typeData = getTypeBySlug(category, type);
+  const priceData = getPricing(category, type);
+
+  if (!catData || !typeData) notFound();
+
+  const t = await getTranslations({ locale });
+
+  // Трансформация данных из конфига под интерфейс PriceCard
+  const tiers =
+    priceData?.tiers.map((tier) => {
+      // Извлекаем текст в скобках для hint, если он есть
+      const match = tier.label.match(/(.*)\s\((.*)\)/);
+      return {
+        label: match ? match[1] : tier.label,
+        hint: match ? match[2] : undefined,
+        price: formatPrice(tier.price, tier.model),
+      };
+    }) || [];
 
   return (
-    <main className="container mx-auto px-4 py-16">
-      {/* Хлебные крошки */}
-      <nav className="text-sm text-muted-foreground mb-6">
-        <Link href={`/${locale}/services`} className="hover:underline">Услуги</Link>
-        {" / "}
-        <span>{cat.icon} {cat.titleKey}</span>
-      </nav>
+    <main className="main-layout pt-10 pb-24">
+      {/* Hero Section */}
+      <section className="relative w-full aspect-[21/9] md:aspect-[3/1] overflow-hidden bg-zinc-900 mb-16 shadow-2xl">
+        {/* Градиент должен быть absolute, чтобы не занимать место в потоке */}
+        <div className="absolute inset-0 opacity-40 bg-gradient-to-tr from-black to-transparent z-0" />
 
-      <h1 className="text-3xl font-bold mb-10">
-        {cat.icon} {cat.titleKey}
-      </h1>
+        {/* Контентный слой */}
+        <div className="relative z-10 h-full flex flex-col p-10 md:p-20 justify-between">
+          <nav className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-white/60">
+            <Link
+              href={`/${locale}`}
+              className="hover:text-white transition-colors"
+            >
+              Главная
+            </Link>
+            <span>/</span>
+            <Link
+              href={`/${locale}/services`}
+              className="hover:text-white transition-colors"
+            >
+              Услуги
+            </Link>
+            <span>/</span>
+            <Link
+              href={`/${locale}/services/${category}`}
+              className="hover:text-white transition-colors"
+            >
+              {t(catData.titleKey as any)}
+            </Link>
+          </nav>
 
-      {/* Типы услуг внутри категории */}
-      <div className="space-y-6">
-        {cat.types.map((type) => (
-          <Link
-            key={type.slug}
-            href={`/${locale}/services/${category}/${type.slug}`}
-            className="group block p-6 border rounded-xl hover:border-primary hover:shadow-md transition-all"
-          >
-            <h2 className="text-xl font-semibold group-hover:text-primary transition-colors">
-              {type.titleKey}
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {type.services.length} услуг →
+          <h1 className="text-3xl md:text-5xl font-serif text-white max-w-3xl leading-[1.15] tracking-tight">
+            {t(typeData.titleKey as any)}
+          </h1>
+        </div>
+      </section>
+
+      <div className="grid lg:grid-cols-[1fr_300px] gap-16 items-start">
+        <div className="space-y-12">
+          {/* Description */}
+          <div className="prose prose-zinc max-w-none">
+            <p className="text-lg text-[#1c1c1a] leading-relaxed font-sans opacity-90">
+              {t(typeData.descriptionKey as any)}
             </p>
-            {/* Превью первых 3 услуг */}
-            <ul className="mt-3 space-y-1">
-              {type.services.slice(0, 3).map((service) => (
-                <li key={service.id} className="text-sm text-muted-foreground">
-                  · {service.titleKey}
-                </li>
-              ))}
-              {type.services.length > 3 && (
-                <li className="text-sm text-muted-foreground">
-                  · и ещё {type.services.length - 3}...
-                </li>
-              )}
-            </ul>
-          </Link>
-        ))}
+          </div>
+
+          {/* Price Component */}
+          {tiers.length > 0 && (
+            <PriceCard
+              tiers={tiers}
+              note={priceData?.note}
+              ctaLabel="Получить расчёт"
+            />
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <ServiceSidebar category={catData} activeTypeSlug={type} />
       </div>
     </main>
   );

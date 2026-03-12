@@ -1,268 +1,241 @@
-"use client";
 // src/components/ContactForm.tsx
 // ============================================================
 // ФОРМА ОБРАТНОЙ СВЯЗИ с прикреплением файлов
 // Отправляет на /api/contact → email через Resend/Nodemailer
 // ============================================================
 
-import { useState, useRef, useCallback } from "react";
+// src/components/ContactForm.tsx
+"use client";
+
+import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { siteConfig } from "@/config";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_TYPES = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "image/jpeg",
-  "image/png",
-];
+interface Props {
+  preselectedService?: string;
+}
 
-type FormState = "idle" | "loading" | "success" | "error";
-
-export default function ContactForm() {
+export default function ContactForm({ preselectedService }: Props) {
   const t = useTranslations("contact.form");
+  const tCat = useTranslations("services");
 
-  const [state, setState] = useState<FormState>("idle");
-  const [files, setFiles] = useState<File[]>([]);
-  const [dragOver, setDragOver] = useState(false);
-  const [fileError, setFileError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    company: "",
+    message: "",
+    service: preselectedService ?? "",
+  });
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [status, setStatus] = useState<
+    "idle" | "sending" | "success" | "error"
+  >("idle");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const formRef = useRef<HTMLFormElement>(null);
+  function set(field: string, value: string) {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  }
 
-  // ============================================================
-  // Обработка файлов
-  // ============================================================
-  const validateAndAddFiles = useCallback((newFiles: FileList | File[]) => {
-    setFileError("");
-    const valid: File[] = [];
+  function validate() {
+    const errs: Record<string, string> = {};
+    if (!formData.name.trim()) errs.name = "Обязательное поле";
+    if (!formData.email.trim()) errs.email = "Обязательное поле";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+      errs.email = "Введите корректный email";
+    if (!formData.message.trim()) errs.message = "Обязательное поле";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
 
-    Array.from(newFiles).forEach((file) => {
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        setFileError(`Тип файла не поддерживается: ${file.name}`);
-        return;
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        setFileError(`Файл слишком большой (max 10MB): ${file.name}`);
-        return;
-      }
-      valid.push(file);
-    });
+  async function handleSubmit() {
+    if (!validate()) return;
+    setStatus("sending");
 
-    setFiles((prev) => [...prev, ...valid]);
-  }, []);
-
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragOver(false);
-      validateAndAddFiles(e.dataTransfer.files);
-    },
-    [validateAndAddFiles]
-  );
-
-  // ============================================================
-  // Отправка формы
-  // ============================================================
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setState("loading");
-
-    const formData = new FormData(e.currentTarget);
-    files.forEach((file) => formData.append("files", file));
+    const fd = new FormData();
+    Object.entries(formData).forEach(([k, v]) => fd.append(k, v));
+    if (attachment) fd.append("attachment", attachment);
 
     try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error("Server error");
-
-      setState("success");
-      formRef.current?.reset();
-      setFiles([]);
+      const res = await fetch("/api/contact", { method: "POST", body: fd });
+      if (!res.ok) throw new Error();
+      setStatus("success");
     } catch {
-      setState("error");
+      setStatus("error");
     }
-  };
+  }
 
-  if (state === "success") {
+  if (status === "success") {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="text-5xl mb-4">✅</div>
-        <p className="text-lg font-medium mb-2">Сообщение отправлено!</p>
-        <p className="text-muted-foreground text-sm">{t("success")}</p>
-        <button
-          onClick={() => setState("idle")}
-          className="mt-6 text-sm text-primary hover:underline"
-        >
-          Отправить ещё
-        </button>
+      <div className="rounded-xl border border-green-800 bg-green-950/40 p-6 text-center">
+        <div className="text-2xl mb-2">✓</div>
+        <p className="text-sm text-green-300">{t("success")}</p>
       </div>
     );
   }
 
+  function getCatLabel(catTitleKey: string): string {
+    // titleKey вида "services.audit.title" → namespace "services", ключ "audit.title"
+    const key = catTitleKey.replace("services.", "") as Parameters<
+      typeof tCat
+    >[0];
+    try {
+      return tCat(key);
+    } catch {
+      return catTitleKey;
+    }
+  }
+
+  function getTypeLabel(typeTitleKey: string): string {
+    const key = typeTitleKey.replace("services.", "") as Parameters<
+      typeof tCat
+    >[0];
+    try {
+      return tCat(key);
+    } catch {
+      return typeTitleKey;
+    }
+  }
+
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-xl font-semibold mb-6">{t("title")}</h2>
-
-      {/* ИМЯ + EMAIL */}
+    <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="name">
-            {t("name")} <span className="text-destructive">*</span>
-          </label>
+        <Field label={t("name")} error={errors.name} required>
           <input
-            id="name"
-            name="name"
-            type="text"
-            required
-            className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            value={formData.name}
+            onChange={(e) => set("name", e.target.value)}
+            className={inputCls(!!errors.name)}
+            placeholder={t("name")}
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="email">
-            {t("email")} <span className="text-destructive">*</span>
-          </label>
+        </Field>
+        <Field label={t("email")} error={errors.email} required>
           <input
-            id="email"
-            name="email"
             type="email"
-            required
-            className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            value={formData.email}
+            onChange={(e) => set("email", e.target.value)}
+            className={inputCls(!!errors.email)}
+            placeholder="example@company.ru"
           />
-        </div>
-      </div>
-
-      {/* ТЕЛЕФОН + КОМПАНИЯ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="phone">
-            {t("phone")}
-          </label>
+        </Field>
+        <Field label={t("phone")}>
           <input
-            id="phone"
-            name="phone"
             type="tel"
-            className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            value={formData.phone}
+            onChange={(e) => set("phone", e.target.value)}
+            className={inputCls(false)}
+            placeholder="+7 (___) ___-__-__"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="company">
-            {t("company")}
-          </label>
+        </Field>
+        <Field label={t("company")}>
           <input
-            id="company"
-            name="company"
-            type="text"
-            className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            value={formData.company}
+            onChange={(e) => set("company", e.target.value)}
+            className={inputCls(false)}
+            placeholder="ООО «Компания»"
           />
-        </div>
+        </Field>
       </div>
 
-      {/* СООБЩЕНИЕ */}
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="message">
-          {t("message")} <span className="text-destructive">*</span>
-        </label>
-        <textarea
-          id="message"
-          name="message"
-          required
-          rows={4}
-          className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-        />
-      </div>
-
-      {/* ПРИКРЕПЛЕНИЕ ФАЙЛОВ */}
-      <div>
-        <label className="block text-sm font-medium mb-2">{t("attachment")}</label>
-
-        {/* Зона drag&drop */}
-        <div
-          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-            dragOver
-              ? "border-primary bg-primary/5"
-              : "border-muted-foreground/25 hover:border-primary/50"
-          }`}
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
+      <Field label={t("service")}>
+        <select
+          value={formData.service}
+          onChange={(e) => set("service", e.target.value)}
+          className={inputCls(false) + " appearance-none cursor-pointer"}
         >
-          <div className="text-2xl mb-2">📎</div>
-          <p className="text-sm text-muted-foreground">
-            Перетащите файлы или <span className="text-primary underline">выберите</span>
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">{t("attachmentHint")}</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-            className="hidden"
-            onChange={(e) => e.target.files && validateAndAddFiles(e.target.files)}
-          />
+          <option value="">{t("servicePlaceholder")}</option>
+          {siteConfig.services.map((cat) => (
+            <optgroup key={cat.slug} label={getCatLabel(cat.titleKey)}>
+              {cat.types.map((type) => (
+                <option key={type.slug} value={`${cat.slug}/${type.slug}`}>
+                  {getTypeLabel(type.titleKey)}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </Field>
+
+      <Field label={t("message")} error={errors.message} required>
+        <textarea
+          value={formData.message}
+          onChange={(e) => set("message", e.target.value)}
+          className={inputCls(!!errors.message) + " min-h-[100px] resize-none"}
+          placeholder="Опишите ваш запрос..."
+        />
+      </Field>
+
+      <Field label={t("attachment")}>
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="cursor-pointer rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors">
+            {attachment ? attachment.name : "Выбрать файл"}
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.xls,.xlsx"
+              className="hidden"
+              onChange={(e) => setAttachment(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          {attachment && (
+            <button
+              onClick={() => setAttachment(null)}
+              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              Удалить
+            </button>
+          )}
+          <span className="text-xs text-zinc-600">{t("attachmentHint")}</span>
         </div>
+      </Field>
 
-        {/* Ошибка файла */}
-        {fileError && (
-          <p className="text-xs text-destructive mt-1">{fileError}</p>
-        )}
-
-        {/* Список прикреплённых файлов */}
-        {files.length > 0 && (
-          <ul className="mt-3 space-y-2">
-            {files.map((file, index) => (
-              <li
-                key={index}
-                className="flex items-center justify-between text-sm bg-muted rounded-lg px-3 py-2"
-              >
-                <span className="truncate">{file.name}</span>
-                <button
-                  type="button"
-                  onClick={() => removeFile(index)}
-                  className="ml-2 text-muted-foreground hover:text-destructive shrink-0"
-                  aria-label="Remove file"
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* ОШИБКА ОТПРАВКИ */}
-      {state === "error" && (
-        <p className="text-sm text-destructive">{t("error")}</p>
+      {status === "error" && (
+        <p className="text-sm text-red-400">{t("error")}</p>
       )}
 
-      {/* КНОПКА ОТПРАВКИ */}
-      <button
-        type="submit"
-        disabled={state === "loading"}
-        className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {state === "loading" ? (
-          <span className="flex items-center justify-center gap-2">
-            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-            {t("sending")}
-          </span>
-        ) : (
-          t("submit")
-        )}
-      </button>
-    </form>
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={handleSubmit}
+          disabled={status === "sending"}
+          className="w-full rounded-xl bg-zinc-100 text-zinc-900 px-6 py-3 text-sm font-medium hover:bg-white disabled:opacity-50 transition-colors"
+        >
+          {status === "sending" ? t("sending") : t("submit")}
+        </button>
+        <p className="text-xs text-zinc-600 text-center">{t("privacy")}</p>
+      </div>
+    </div>
   );
+}
+
+// ─── Вспомогательные компоненты ──────────────────────────────
+
+function Field({
+  label,
+  children,
+  error,
+  required,
+}: {
+  label: string;
+  children: React.ReactNode;
+  error?: string;
+  required?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-xs text-zinc-400">
+        {label}
+        {required && <span className="text-zinc-600 ml-0.5">*</span>}
+      </label>
+      {children}
+      {error && <span className="text-xs text-red-400">{error}</span>}
+    </div>
+  );
+}
+
+function inputCls(hasError: boolean) {
+  return [
+    "w-full rounded-lg border bg-zinc-900 px-3 py-2 text-sm text-zinc-100",
+    "placeholder-zinc-600 outline-none transition-colors focus:ring-1",
+    hasError
+      ? "border-red-700 focus:ring-red-700"
+      : "border-zinc-700 focus:ring-zinc-500",
+  ].join(" ");
 }

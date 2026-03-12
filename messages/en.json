@@ -5,114 +5,283 @@
     "resources": "Documents",
     "services": "Services"
   },
-
   "pages": {
     "home": {
       "title": "RCONS — Audit & Consulting",
-      "description": "Professional audit and consulting firm. IFRS and RSBU audit, tax consulting."
+      "desc": "Professional audit and consulting services."
     },
     "about": {
       "title": "About Us",
-      "description": "History, team and values of RCONS. Experience, licenses and professional standards."
+      "desc": "History, team and values of RCONS."
     },
     "contacts": {
       "title": "Contacts",
-      "description": "Address, phone and email of RCONS. Contact form for inquiries."
+      "desc": "Address, phone and email of RCONS."
+    },
+    "services": {
+      "title": "Services",
+      "desc": "Full range of audit and consulting services."
     },
     "resources": {
       "title": "Documents & Resources",
-      "description": "Official documents, SRO certificates, disclosure and auditor qualifications.",
+      "desc": "Official documents, SRO certificates, disclosure and auditor qualifications.",
       "documents": {
         "title": "Internal Documents",
-        "description": "Accounting policies, quality standards and internal regulations."
+        "desc": "Accounting policies, quality standards and internal regulations."
       },
       "sro": {
         "title": "SRO Membership",
-        "description": "Certificate of membership in the self-regulatory organization of auditors."
+        "desc": "Self-regulatory organization membership certificate."
       },
       "disclosure": {
         "title": "Information Disclosure",
-        "description": "Mandatory disclosure of information per audit legislation."
+        "desc": "Mandatory disclosure under audit legislation."
       },
       "qualifications": {
         "title": "Qualification Certificates",
-        "description": "Auditor certificates and qualification confirmations."
+        "desc": "Auditor certificates and qualification confirmations."
       }
     }
   },
-
   "services": {
+    "allServices": "All Services",
+    "backToCategory": "Back to Category",
+    "requestService": "Request Service",
     "audit": {
       "title": "Audit",
-      "description": "Audit services under Russian and international standards.",
-      "rsbu": {
-        "title": "RSBU Audit",
-        "description": "Audit of financial statements under Russian accounting standards.",
-        "mandatory": {
-          "title": "Statutory Audit",
-          "description": "Mandatory audit for organizations required by legislation.",
-          "content": "Statutory audit is conducted for joint-stock companies, credit organizations and other entities per the Federal Law on Auditing."
-        },
-        "initiative": {
-          "title": "Voluntary Audit",
-          "description": "Voluntary audit at the initiative of management or owners.",
-          "content": "Voluntary audit is conducted by decision of owners or management to obtain independent assessment of financial statement reliability."
-        },
-        "express": {
-          "title": "Express Audit",
-          "description": "Rapid review to identify key risks quickly.",
-          "content": "Express audit — quick assessment of accounting and reporting to identify critical errors in a short timeframe."
-        }
+      "desc": "Statutory and voluntary audit, specialized reporting",
+      "mandatory-rsbu": {
+        "title": "Statutory Audit (RAS) — LLC, JSC, PJSC",
+        "desc": "Annual mandatory audit of financial statements under Federal Law No. 307-FZ."
       },
-      "ifrs": {
-        "title": "IFRS Audit",
-        "description": "Audit and transformation of financial statements under IFRS.",
-        "audit": {
-          "title": "IFRS Financial Statement Audit",
-          "description": "Independent audit of financial statements prepared in accordance with IFRS.",
-          "content": "IFRS audit is required for companies with foreign investors, those accessing international capital markets or part of international groups."
-        },
-        "transformation": {
-          "title": "Financial Statement Transformation",
-          "description": "Conversion of financial statements from RSBU to IFRS.",
-          "content": "Transformation from RSBU to IFRS includes analysis of differences, adjustment of balance sheet items, and preparation of disclosures."
-        }
+      "mandatory-gup": {
+        "title": "Statutory Audit — State Enterprises & Entities with Government Ownership",
+        "desc": "Audit of state and municipal unitary enterprises and entities with government ownership."
+      },
+      "mandatory-nko": {
+        "title": "Audit of NPOs, Foundations & Associations",
+        "desc": "Statutory and voluntary audit of non-profit organizations, foundations and associations."
+      },
+      "mandatory-developer": {
+        "title": "Audit of Developers (214-FZ)",
+        "desc": "Specialized audit of developers under 214-FZ: escrow accounts, financial stability ratios."
+      },
+      "initiative": {
+        "title": "Voluntary Audit by Shareholder or Bank Request",
+        "desc": "Voluntary audit at the decision of owners or lending bank."
+      },
+      "special-assignment": {
+        "title": "Special Purpose Audit",
+        "desc": "Verification of specific transactions, financial figures or ownership rights."
+      },
+      "tax-audit": {
+        "title": "Tax Audit (Risk & Overpayment Review)",
+        "desc": "Comprehensive review of tax calculations. Risk and overpayment identification."
+      },
+      "strategic-programs": {
+        "title": "Audit of Strategic Development Programs",
+        "desc": "Review of strategic programs, investment projects and KPI execution."
+      },
+      "pif": {
+        "title": "Audit of Mutual Funds & Asset Managers",
+        "desc": "Audit of mutual funds and management companies per Central Bank requirements."
+      },
+      "pension": {
+        "title": "Confirmation of Pension Assets in Trust Management",
+        "desc": "Audit of management company reporting on pension assets in trust management."
       }
     },
     "tax": {
-      "title": "Tax Consulting",
-      "description": "Tax planning, optimization and support during tax audits.",
+      "title": "Tax",
+      "desc": "Tax consulting, audit support, VAT refund, restructuring",
       "consulting": {
         "title": "Tax Consulting",
-        "description": "Comprehensive tax planning and tax burden reduction services.",
-        "opt": {
-          "title": "Tax Optimization",
-          "description": "Legal methods of reducing tax burden: tax system selection, benefits, structuring.",
-          "content": "Tax optimization — application of legal tools to reduce the tax burden: choosing the optimal taxation system, using benefits, smart business structuring."
-        }
+        "desc": "One-time consultations and written opinions on VAT, income tax, personal income tax, transfer pricing."
+      },
+      "subscription": {
+        "title": "Tax Retainer — Ongoing Support",
+        "desc": "Regular tax support: legislation monitoring, consultations, contract review."
+      },
+      "pre-inspection": {
+        "title": "Pre-Inspection Analysis",
+        "desc": "Tax risk diagnostics before a potential FTS field audit."
+      },
+      "inspection-support": {
+        "title": "Tax Audit Support",
+        "desc": "Representation during tax audits: responses to FTS requests, objections to audit reports."
+      },
+      "pre-trial": {
+        "title": "Pre-Trial Appeal of FTS Decisions",
+        "desc": "Appeals and complaints to higher tax authorities against FTS decisions."
+      },
+      "vat-refund": {
+        "title": "VAT Refund",
+        "desc": "Support for VAT refund procedures from the budget."
+      },
+      "restructuring": {
+        "title": "Tax Restructuring",
+        "desc": "Legal tax optimization during restructuring: mergers, spin-offs, holding structures."
+      },
+      "declaration": {
+        "title": "Personal Tax Returns (PIT, CFC)",
+        "desc": "Personal income tax returns, CFC notifications, foreign account reporting."
+      }
+    },
+    "valuation": {
+      "title": "Valuation",
+      "desc": "Business, assets, real estate, cadastral value disputes",
+      "business-valuation": {
+        "title": "Business, Shares & Equity Valuation",
+        "desc": "Independent fair market value assessment of businesses, shares and LLC interests."
+      },
+      "intangibles": {
+        "title": "Intangible Assets Valuation",
+        "desc": "Valuation of brands, software, patents, licenses and customer bases."
+      },
+      "ma-valuation": {
+        "title": "M&A Valuation",
+        "desc": "Independent opinion on fair deal price for M&A and investor attraction."
+      },
+      "real-estate": {
+        "title": "Commercial Real Estate Valuation",
+        "desc": "Valuation of offices, retail, warehouses and hotels."
+      },
+      "land": {
+        "title": "Land Valuation",
+        "desc": "Market value of land plots of all categories."
+      },
+      "vehicles": {
+        "title": "Vehicle Valuation",
+        "desc": "Cars, special equipment, aircraft and watercraft."
+      },
+      "equipment": {
+        "title": "Equipment & Production Assets Valuation",
+        "desc": "Production equipment and fixed assets valuation."
+      },
+      "cadastral": {
+        "title": "Cadastral Value Dispute",
+        "desc": "Reducing cadastral value at Rosreestr or court."
+      },
+      "bank-valuation": {
+        "title": "Bank Valuation (Collateral & Lending)",
+        "desc": "Valuation reports for lending banks. Accredited with major Russian banks."
+      },
+      "damage": {
+        "title": "Damage & Loss Assessment",
+        "desc": "Actual damage and lost profit assessment for disputes."
+      }
+    },
+    "due-diligence": {
+      "title": "Due Diligence",
+      "desc": "Financial, tax, legal and operational DD for M&A",
+      "financial-dd": {
+        "title": "Financial Due Diligence",
+        "desc": "Review of financial health: reporting, cash flows, debt, accounting systems."
+      },
+      "tax-dd": {
+        "title": "Tax Due Diligence",
+        "desc": "Tax obligations and risks: history, hidden liabilities, FTS exposure."
+      },
+      "legal-dd": {
+        "title": "Legal Due Diligence",
+        "desc": "Legal risks: corporate structure, licenses, litigation, contracts, IP."
+      },
+      "operational-dd": {
+        "title": "Operational Due Diligence",
+        "desc": "Operating model, processes, key staff, IT systems, market position."
+      },
+      "complex-dd": {
+        "title": "Comprehensive Due Diligence",
+        "desc": "Full DD across all areas. One team, one report. M&A, investment, lending."
+      }
+    },
+    "outsourcing": {
+      "title": "Accounting Outsourcing",
+      "desc": "Full bookkeeping, payroll, accounting recovery",
+      "full-accounting": {
+        "title": "Full Accounting Outsourcing",
+        "desc": "CFO function outsourced: all accounting, reporting, FTS interaction."
+      },
+      "payroll": {
+        "title": "Payroll & HR Records",
+        "desc": "Payroll calculation, HR documentation, employment contracts."
+      },
+      "restoration": {
+        "title": "Accounting Recovery",
+        "desc": "Restoring neglected accounting: documents, corrections, amended returns."
+      },
+      "zero-reporting": {
+        "title": "Nil Returns",
+        "desc": "Preparation and filing of nil returns for dormant companies."
+      },
+      "fsbu": {
+        "title": "Transition to New Accounting Standards (FSBU)",
+        "desc": "FSBU 6/2020, 14/2022, 25/2018, 28/2023 transition support."
+      },
+      "accounting-policy": {
+        "title": "Accounting Policy & Methodology",
+        "desc": "Development of accounting policies, chart of accounts, non-standard operation methods."
+      }
+    },
+    "financial-consulting": {
+      "title": "Financial Consulting",
+      "desc": "Analysis, business planning, modeling, management reporting",
+      "analysis": {
+        "title": "Financial Analysis & Company Diagnostics",
+        "desc": "Liquidity, profitability, stability analysis and improvement recommendations."
+      },
+      "business-planning": {
+        "title": "Business Planning & Investment Analysis",
+        "desc": "Business plans for fundraising. NPV, IRR, sensitivity analysis."
+      },
+      "modeling": {
+        "title": "Financial Modeling & Budgeting",
+        "desc": "Cash flow, P&L and balance sheet models. Scenario planning."
+      },
+      "management-reporting": {
+        "title": "Management Reporting Development",
+        "desc": "Management accounting system: report structure, KPIs, executive dashboards."
+      }
+    },
+    "legal": {
+      "title": "Legal Services",
+      "desc": "Outsourcing, litigation, bankruptcy, corporate law",
+      "legal-outsourcing": {
+        "title": "Legal Outsourcing",
+        "desc": "Retainer legal support: consultations, contracts, corporate documents."
+      },
+      "litigation": {
+        "title": "Litigation & Court Representation",
+        "desc": "All arbitration court levels. Tax, civil and administrative disputes."
+      },
+      "bankruptcy": {
+        "title": "Bankruptcy & Liquidation",
+        "desc": "All bankruptcy procedures and voluntary liquidation."
+      },
+      "corporate": {
+        "title": "Corporate Advisory",
+        "desc": "Corporate transactions, reorganization, M&A, shareholder agreements."
       }
     }
   },
-
   "common": {
     "learnMore": "Learn More",
     "contactUs": "Contact Us",
     "backToServices": "All Services",
     "loading": "Loading...",
+    "requestService": "Request Service",
     "search": {
-      "placeholder": "Find a service or section...",
+      "placeholder": "Search services or sections...",
       "noResults": "No results found",
-      "results": "Search results"
+      "results": "Search Results"
     }
   },
-
   "hero": {
     "title": "Audit and Consulting for Your Business",
-    "subtitle": "Professional audit services, tax consulting and financial analysis",
-    "cta": "Our Services",
+    "subtitle": "Professional audit, tax consulting and financial analysis",
+    "cta": "Explore Services",
     "ctaSecondary": "Contact Us"
   },
-
   "contact": {
     "form": {
       "title": "Contact Us",
@@ -121,26 +290,41 @@
       "phone": "Phone",
       "company": "Company",
       "message": "Message",
-      "attachment": "Attach file",
+      "service": "Service of Interest",
+      "servicePlaceholder": "Select a service (optional)",
+      "attachment": "Attach File",
       "attachmentHint": "PDF, Word, Excel up to 10 MB",
       "submit": "Send",
       "sending": "Sending...",
       "success": "Message sent! We will contact you within 1 business day.",
-      "error": "Send error. Please email us at info@rcons.ru"
+      "error": "Send error. Please email us at info@rcons.ru",
+      "privacy": "By clicking Send, you agree to the processing of personal data"
     }
   },
-
   "chat": {
     "title": "RCONS Assistant",
-    "placeholder": "Ask about our services...",
-    "greeting": "Hello! I can help you find the right service or section. How can I help?",
+    "placeholder": "Ask about services...",
+    "greeting": "Hello! I can help you find the right service or section.",
     "open": "Assistant",
-    "close": "Close"
+    "close": "Close",
+    "thinking": "Thinking...",
+    "error": "An error occurred. Please try again.",
+    "clearHistory": "Clear History"
   },
-
   "metadata": {
     "siteName": "RCONS",
     "defaultTitle": "RCONS — Audit & Consulting",
-    "defaultDescription": "Professional RSBU and IFRS audit, tax consulting. SRO member."
+    "defaultDescription": "Professional audit, tax consulting, business valuation, due diligence. SRO member."
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "disclosure": "Disclosure",
+    "sro": "SRO",
+    "privacy": "Privacy Policy"
+  },
+  "errors": {
+    "notFound": "Page Not Found",
+    "notFoundDesc": "The requested page does not exist or has been moved.",
+    "backHome": "Back to Home"
   }
 }

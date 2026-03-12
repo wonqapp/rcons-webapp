@@ -1,248 +1,138 @@
 "use client";
-// src/components/Search.tsx
-// ============================================================
-// ПОИСК — Fuse.js fuzzy search
-// Резолвит titleKey → реальный текст для текущей локали
-// Поддерживает: опечатки, частичное совпадение
-// Установи: npm install fuse.js
-// ============================================================
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/routing";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import Link from "next/link";
 import { siteConfig } from "@/config";
 
-// Типы
 interface SearchItem {
-  title: string;
-  description?: string;
+  titleKey: string;
+  descriptionKey: string;
   href: string;
   category: string;
+  type: string;
+  tags: string[];
 }
 
-// Иконки по категориям
-const categoryIcons: Record<string, string> = {
-  audit: "🔍",
-  tax: "📊",
-  main: "📄",
-  resources: "🏛️",
-};
+interface Props {
+  onClose?: () => void;
+}
 
-export default function Search() {
+export default function Search({ onClose }: Props) {
   const t = useTranslations();
-  const tCommon = useTranslations("common.search");
-  const router = useRouter();
-
-  const [open, setOpen] = useState(false);
+  const locale = useLocale();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchItem[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  // ============================================================
-  // Строим поисковый индекс из конфига
-  // Резолвируем titleKey → реальный текст
-  // ============================================================
-  const buildIndex = useCallback((): SearchItem[] => {
-    return siteConfig.search.map((item) => {
-      // Безопасно достаём перевод — если ключ не найден, fallback к href
-      let title = item.href;
-      let description = "";
-      try {
-        title = t(item.titleKey as never);
-      } catch {
-        title = item.href;
-      }
-      if ("descriptionKey" in item) {
-        try {
-          description = t((item as { descriptionKey: string }).descriptionKey as never);
-        } catch {
-          description = "";
-        }
-      }
-      return {
-        title,
-        description,
-        href: item.href,
-        category: item.category,
-      };
-    });
-  }, [t]);
-
-  // ============================================================
-  // Поиск через Fuse.js (динамический импорт чтоб не грузить сразу)
-  // ============================================================
   useEffect(() => {
-    if (!open || !query.trim()) {
-      setResults([]);
-      setSelectedIndex(0);
-      return;
-    }
-
-    const searchItems = buildIndex();
-
-    // Динамически грузим Fuse только когда нужен поиск
-    import("fuse.js").then(({ default: Fuse }) => {
-      const fuse = new Fuse(searchItems, {
-        keys: [
-          { name: "title", weight: 0.7 },
-          { name: "description", weight: 0.3 },
-        ],
-        threshold: 0.4, // 0 = точное, 1 = совпадает всё
-        includeScore: true,
-        minMatchCharLength: 2,
-      });
-
-      const searchResults = fuse.search(query).slice(0, 8);
-      setResults(searchResults.map((r) => r.item));
-      setSelectedIndex(0);
-    });
-  }, [query, open, buildIndex]);
-
-  // Открытие по Ctrl+K / Cmd+K
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        setOpen(true);
-      }
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    inputRef.current?.focus();
   }, []);
 
-  // Фокус при открытии
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
-      setQuery("");
-    }
-  }, [open]);
-
-  // Клик вне — закрыть
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
+  const getTitle = useCallback(
+    (key: string): string => {
+      try {
+        return t(key as Parameters<typeof t>[0]);
+      } catch {
+        return key;
       }
-    };
-    if (open) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
+    },
+    [t],
+  );
 
-  // Навигация стрелками + Enter
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, results.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSelectedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && results[selectedIndex]) {
-      navigateTo(results[selectedIndex].href);
-    }
-  };
+  const getDesc = useCallback(
+    (key: string): string => {
+      try {
+        return t(key as Parameters<typeof t>[0]);
+      } catch {
+        return "";
+      }
+    },
+    [t],
+  );
 
-  const navigateTo = (href: string) => {
-    router.push(href as never);
-    setOpen(false);
-  };
+  const results = useMemo<SearchItem[]>(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return siteConfig.search
+      .filter((item) => {
+        const title = getTitle(item.titleKey).toLowerCase();
+        const desc = getDesc(item.descriptionKey).toLowerCase();
+        const tags = item.tags.some((tag) => tag.toLowerCase().includes(q));
+        return title.includes(q) || desc.includes(q) || tags;
+      })
+      .slice(0, 8);
+  }, [query, getTitle, getDesc]);
 
   return (
-    <>
-      {/* КНОПКА ОТКРЫТИЯ */}
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-input bg-background hover:bg-accent transition-colors text-muted-foreground"
-        aria-label="Search"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    <div className="relative w-full max-w-xl mx-auto">
+      <div className="flex items-center gap-2 border-b border-[#1a1a18] pb-2">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          className="text-[#a8a49d] shrink-0"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
-        <span className="hidden sm:inline">{tCommon("placeholder")}</span>
-        <kbd className="hidden sm:inline text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
-          ⌘K
-        </kbd>
-      </button>
-
-      {/* МОДАЛ ПОИСКА */}
-      {open && (
-        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-start justify-center pt-[20vh]">
-          <div
-            ref={containerRef}
-            className="w-full max-w-lg mx-4 bg-background border rounded-2xl shadow-2xl overflow-hidden"
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Найти услугу..."
+          className="flex-1 bg-transparent text-sm text-[#1a1a18] placeholder-[#a8a49d] outline-none"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onClose?.();
+          }}
+        />
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            className="text-[#a8a49d] hover:text-[#1a1a18] transition-colors"
           >
-            {/* INPUT */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b">
-              <svg className="h-5 w-5 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={tCommon("placeholder")}
-                className="flex-1 bg-transparent outline-none text-sm"
-              />
-              {query && (
-                <button onClick={() => setQuery("")} className="text-muted-foreground hover:text-foreground">
-                  ✕
-                </button>
-              )}
-            </div>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
+      </div>
 
-            {/* РЕЗУЛЬТАТЫ */}
-            <div className="max-h-80 overflow-y-auto">
-              {query && results.length === 0 && (
-                <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  {tCommon("noResults")} «{query}»
-                </p>
-              )}
-
-              {results.length > 0 && (
-                <div className="py-2">
-                  <p className="px-4 py-1 text-xs text-muted-foreground font-medium">
-                    {tCommon("results")}
-                  </p>
-                  {results.map((item, index) => (
-                    <button
-                      key={item.href}
-                      onClick={() => navigateTo(item.href)}
-                      className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors ${
-                        index === selectedIndex ? "bg-accent" : "hover:bg-accent/50"
-                      }`}
-                    >
-                      <span className="text-lg shrink-0">
-                        {categoryIcons[item.category] ?? "📄"}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.title}</p>
-                        {item.description && (
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {item.description}
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {!query && (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  <p>Начните вводить запрос...</p>
-                  <p className="text-xs mt-2">↑↓ навигация · Enter перейти · Esc закрыть</p>
-                </div>
-              )}
-            </div>
-          </div>
+      {results.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#e8e6e1] rounded-xl shadow-lg shadow-black/5 overflow-hidden z-50">
+          {results.map((item, i) => (
+            <Link
+              key={i}
+              href={`/${locale}${item.href}`}
+              onClick={onClose}
+              className="flex flex-col gap-0.5 px-4 py-3 hover:bg-[#f7f6f3] transition-colors border-b border-[#f0ede8] last:border-0"
+            >
+              <span className="text-sm text-[#1a1a18]">
+                {getTitle(item.titleKey)}
+              </span>
+              <span className="text-xs text-[#a8a49d] line-clamp-1">
+                {getDesc(item.descriptionKey)}
+              </span>
+            </Link>
+          ))}
         </div>
       )}
-    </>
+
+      {query.trim() && results.length === 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#e8e6e1] rounded-xl px-4 py-3 z-50">
+          <span className="text-sm text-[#a8a49d]">Ничего не найдено</span>
+        </div>
+      )}
+    </div>
   );
 }

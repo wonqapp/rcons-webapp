@@ -3,48 +3,91 @@
 // КАТАЛОГ УСЛУГ — показывает все 8 категорий
 // ============================================================
 
-import { setRequestLocale, getTranslations } from "next-intl/server";
-import { useTranslations } from "next-intl";
-import Link from "next/link";
+// src/app/[locale]/services/page.tsx
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { siteConfig } from "@/config";
+import { getCategoryBySlug } from "@/config/services";
 
 interface Props {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: string; category: string }>;
+}
+
+export async function generateStaticParams() {
+  return siteConfig.locales.flatMap((locale) =>
+    siteConfig.services.map((cat) => ({ locale, category: cat.slug })),
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "pages.services" });
-  return { title: t("title"), description: t("desc") };
+  const { locale, category } = await params;
+  const cat = getCategoryBySlug(category);
+  if (!cat) return {};
+  const t = await getTranslations({ locale });
+  return {
+    title: t(cat.titleKey as Parameters<typeof t>[0]),
+    description: t(cat.descriptionKey as Parameters<typeof t>[0]),
+  };
 }
 
-export default async function ServicesPage({ params }: Props) {
-  const { locale } = await params;
+export default async function CategoryPage({ params }: Props) {
+  const { locale, category } = await params;
   setRequestLocale(locale);
 
-  return (
-    <main className="container mx-auto px-4 py-16">
-      <h1 className="text-3xl font-bold mb-10">Услуги</h1>
+  const cat = getCategoryBySlug(category);
+  if (!cat) notFound();
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {siteConfig.services.map((cat) => (
+  const t = await getTranslations({ locale });
+
+  function tr(key: string): string {
+    return t(key as Parameters<typeof t>[0]);
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-10">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm text-[#a8a49d] mb-10">
+        <Link
+          href={`/${locale}/services`}
+          className="hover:text-[#1a1a18] transition-colors"
+        >
+          Все услуги
+        </Link>
+        <span>/</span>
+        <span className="text-[#1a1a18]">{tr(cat.titleKey)}</span>
+      </nav>
+
+      <h1 className="text-5xl font-bold text-[#1a1a18] leading-[1.05] tracking-tight mb-10">
+        {tr(cat.titleKey)}
+      </h1>
+      <p className="text-base text-[#6b6860] leading-relaxed max-w-2xl mb-14">
+        {tr(cat.descriptionKey)}
+      </p>
+
+      {/* Список услуг как таблица */}
+      <div className="border-t border-[#1a1a18]/20">
+        {cat.types.map((type) => (
           <Link
-            key={cat.slug}
-            href={`/${locale}/services/${cat.slug}`}
-            className="group block p-6 border rounded-xl hover:border-primary hover:shadow-md transition-all"
+            key={type.slug}
+            href={`/${locale}/services/${category}/${type.slug}`}
+            className="group grid grid-cols-[1fr_auto] items-baseline py-5 border-b border-[#e8e6e1] gap-8 hover:border-[#1a1a18]/30 transition-colors"
           >
-            <div className="text-3xl mb-3">{cat.icon}</div>
-            {/* TODO: использовать useTranslations для cat.titleKey */}
-            <h2 className="text-xl font-semibold group-hover:text-primary transition-colors">
-              {cat.titleKey}
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {cat.types.length} разделов · {cat.types.reduce((acc, t) => acc + t.services.length, 0)} услуг
-            </p>
+            <div>
+              <p className="text-base text-[#1a1a18] group-hover:text-[#1a1a18] transition-colors">
+                {tr(type.titleKey)}
+              </p>
+              <p className="text-sm text-[#a8a49d] mt-0.5 line-clamp-1">
+                {tr(type.descriptionKey)}
+              </p>
+            </div>
+            <span className="text-[#a8a49d] group-hover:text-[#1a1a18] transition-colors text-sm">
+              →
+            </span>
           </Link>
         ))}
       </div>
-    </main>
+    </div>
   );
 }

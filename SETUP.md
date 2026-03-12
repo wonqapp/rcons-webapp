@@ -19,7 +19,7 @@ app/
     layout.tsx                          ← ШАГ 10: Корневой layout + metadata
     about/page.tsx                      ← ШАГ 4: О компании
     contacts/page.tsx                   ← ШАГ 4: Контакты
-    resources/page.tsx                  ← ШАГ 4: Документы
+    resources/page.tsx                  ← ШАГ 4: Ресурсы
     resources/sro/page.tsx              ← ШАГ 4: СРО
     resources/documents/page.tsx        ← ШАГ 4: Документы
     resources/disclosure/page.tsx       ← ШАГ 4: Раскрытие инфы

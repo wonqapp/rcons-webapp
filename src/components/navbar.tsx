@@ -1,218 +1,332 @@
 "use client";
-// src/components/navbar.tsx
-// ============================================================
-// NAVBAR — меню генерируется автоматически из siteConfig
-// Добавь услугу в config/services.ts → появится в меню
-// ============================================================
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { Link, usePathname } from "@/i18n/routing";
+import { usePathname } from "next/navigation";
 import { siteConfig } from "@/config";
-import Search from "./Search";
+import Search from "@/components/Search";
+import Image from "next/image";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+import { Button } from "@/components/ui/button";
+import { Search as SearchIcon, Languages, Menu, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type Loc = (typeof siteConfig.locales)[number];
+
+const triggerCls = cn(
+  "bg-transparent hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent !h-6",
+  "text-[14px] font-normal hover:text-muted transition-colors",
+  "p-0 gap-1.5 rounded-none shadow-none",
+);
+
+const linkCls =
+  "text-[14px] font-normal hover:text-muted transition-colors !h-6 shadow-none hover:bg-transparent !rounded-none";
+
+function DropItem({
+  href,
+  label,
+  onClick,
+}: {
+  href: string;
+  label: string;
+  onClick?: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="block px-4 py-2.5 text-[13px] hover:bg-accent rounded-md transition-colors"
+    >
+      {label}
+    </Link>
+  );
+}
+
+function Logo({ onClick }: { onClick: () => void }) {
+  const locale = useLocale();
+  return (
+    <Link
+      href={`/${locale}`}
+      onClick={onClick}
+      className="flex items-center gap-2 shrink-0"
+    >
+      <Image src="/logoN.svg" alt="РКОНС" width={66} height={24} priority />
+    </Link>
+  );
+}
 
 export default function Navbar() {
   const t = useTranslations();
   const locale = useLocale();
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [servicesOpen, setServicesOpen] = useState(false);
-  const [resourcesOpen, setResourcesOpen] = useState(false);
 
-  const isActive = (href: string) => pathname.startsWith(href);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!langRef.current?.contains(e.target as Node)) setLangOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  function tr(k: string) {
+    return t(k as Parameters<typeof t>[0]);
+  }
+  function closeAll() {
+    setSearchOpen(false);
+    setMobileOpen(false);
+    setLangOpen(false);
+  }
+
+  const resourcesLinks = [
+    {
+      href: `/${locale}/resources/documents`,
+      label: tr("pages.resources.documents.title"),
+    },
+    {
+      href: `/${locale}/resources/sro`,
+      label: tr("pages.resources.sro.title"),
+    },
+    {
+      href: `/${locale}/resources/disclosure`,
+      label: tr("pages.resources.disclosure.title"),
+    },
+    {
+      href: `/${locale}/resources/qualifications`,
+      label: tr("pages.resources.qualifications.title"),
+    },
+  ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-bg-l">
+      <div className="main-layout">
+        <div className="content-layout flex items-center justify-between h-18">
+          <Logo onClick={closeAll} />
 
-        {/* ЛОГОТИП */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-          <img src="/logo.svg" alt="RCONS" className="h-8 w-auto" />
-          <span className="hidden sm:inline">RCONS</span>
-        </Link>
-
-        {/* ДЕСКТОП МЕНЮ */}
-        <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
-
-          {/* УСЛУГИ — дропдаун из конфига */}
-          <div className="relative" onMouseLeave={() => setServicesOpen(false)}>
+          <div className="flex items-center gap-10">
             <button
-              className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent ${
-                isActive("/services") ? "text-primary" : "text-foreground"
-              }`}
-              onMouseEnter={() => setServicesOpen(true)}
-              aria-expanded={servicesOpen}
+              onClick={() => setSearchOpen((v) => !v)}
+              className="hidden md:flex text-bb hover:text-muted transition-colors bg-transparent border-none cursor-pointer p-0"
+              aria-label="Поиск"
             >
-              {t("nav.services")}
-              <svg className={`h-4 w-4 transition-transform ${servicesOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <SearchIcon size={16} strokeWidth={1.8} />
             </button>
 
-            {servicesOpen && (
-              <div className="absolute top-full left-0 mt-1 w-72 bg-background border rounded-xl shadow-lg p-2 z-50">
-                {siteConfig.services.map((cat) => (
-                  <div key={cat.slug} className="mb-2">
-                    <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {t(cat.titleKey as never)}
-                    </p>
-                    {cat.pages.map((page) => (
-                      <Link
-                        key={page.slug}
-                        href={`/services/${cat.slug}/${page.slug}` as never}
-                        className="block px-3 py-2 text-sm rounded-lg hover:bg-accent transition-colors"
-                        onClick={() => setServicesOpen(false)}
-                      >
-                        {t(page.titleKey as never)}
-                      </Link>
+            <NavigationMenu viewport={false} className="hidden md:flex">
+              <NavigationMenuList className="gap-6">
+                {/* Услуги — только список категорий */}
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className={triggerCls}>
+                    Услуги
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[220px] p-2">
+                    {siteConfig.services.map((cat) => (
+                      <DropItem
+                        key={cat.slug}
+                        href={`/${locale}/services/${cat.slug}`}
+                        label={tr(cat.titleKey)}
+                        onClick={closeAll}
+                      />
                     ))}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                    <div className="border-t mt-1 pt-1">
+                      <DropItem
+                        href={`/${locale}/services`}
+                        label="Все услуги →"
+                        onClick={closeAll}
+                      />
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
 
-          {/* РЕСУРСЫ — дропдаун */}
-          <div className="relative" onMouseLeave={() => setResourcesOpen(false)}>
-            <button
-              className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent ${
-                isActive("/resources") ? "text-primary" : "text-foreground"
-              }`}
-              onMouseEnter={() => setResourcesOpen(true)}
-              aria-expanded={resourcesOpen}
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link href={`/${locale}/contacts`} className={linkCls}>
+                      {tr("nav.contacts")}
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className={triggerCls}>
+                    {tr("nav.about")}
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[200px] p-2">
+                    <DropItem
+                      href={`/${locale}/about`}
+                      label="О компании"
+                      onClick={closeAll}
+                    />
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className={triggerCls}>
+                    {tr("nav.resources")}
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[240px] p-2">
+                    {resourcesLinks.map((r) => (
+                      <DropItem
+                        key={r.href}
+                        href={r.href}
+                        label={r.label}
+                        onClick={closeAll}
+                      />
+                    ))}
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+
+            <Button
+              asChild
+              className="hidden md:inline-flex py-2 px-4 text-[14px] font-normal bg-bb text-ww rounded-none"
             >
-              {t("nav.resources")}
-              <svg className={`h-4 w-4 transition-transform ${resourcesOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+              <Link href={`/${locale}/contacts`}>Связаться</Link>
+            </Button>
 
-            {resourcesOpen && (
-              <div className="absolute top-full left-0 mt-1 w-56 bg-background border rounded-xl shadow-lg p-2 z-50">
-                {[
-                  { href: "/resources/documents", key: "pages.resources.documents.title" },
-                  { href: "/resources/sro", key: "pages.resources.sro.title" },
-                  { href: "/resources/disclosure", key: "pages.resources.disclosure.title" },
-                  { href: "/resources/qualifications", key: "pages.resources.qualifications.title" },
-                ].map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href as never}
-                    className="block px-3 py-2 text-sm rounded-lg hover:bg-accent transition-colors"
-                    onClick={() => setResourcesOpen(false)}
-                  >
-                    {t(item.key as never)}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* О КОМПАНИИ, КОНТАКТЫ */}
-          {siteConfig.nav
-            .filter((item) => !["nav.resources"].includes(item.titleKey))
-            .map((item) => (
-              <Link
-                key={item.href}
-                href={item.href as never}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent ${
-                  isActive(item.href) ? "text-primary" : "text-foreground"
-                }`}
+            <div ref={langRef} className="relative hidden md:flex">
+              <button
+                onClick={() => setLangOpen((v) => !v)}
+                className="text-bb hover:text-muted transition-colors p-0 bg-transparent border-none cursor-pointer"
+                aria-label="Язык"
               >
-                {t(item.titleKey as never)}
-              </Link>
-            ))}
-        </nav>
-
-        {/* ПРАВАЯ ЧАСТЬ: ПОИСК + ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА */}
-        <div className="flex items-center gap-2">
-          <Search />
-          <LocaleSwitcher />
-
-          {/* БУРГЕР (мобильный) */}
-          <button
-            className="md:hidden p-2 rounded-md hover:bg-accent"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle menu"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {mobileOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <Languages size={16} strokeWidth={1.6} />
+              </button>
+              {langOpen && (
+                <div className="absolute right-0 top-[calc(100%+10px)] bg-bg-l border rounded-lg shadow-sm py-1 min-w-[72px] z-50">
+                  {siteConfig.locales.map((loc: Loc) => (
+                    <Link
+                      key={loc}
+                      href={pathname.replace(`/${locale}`, `/${loc}`)}
+                      onClick={() => setLangOpen(false)}
+                      className={cn(
+                        "block px-3 py-1.5 text-[12px] transition-colors",
+                        loc === locale
+                          ? "font-semibold"
+                          : "text-muted hover:text-foreground",
+                      )}
+                    >
+                      {loc.toUpperCase()}
+                    </Link>
+                  ))}
+                </div>
               )}
-            </svg>
-          </button>
+            </div>
+
+            <button
+              className="md:hidden text-muted hover:text-foreground transition-colors bg-transparent border-none cursor-pointer p-0"
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label="Меню"
+            >
+              {mobileOpen ? (
+                <X size={20} strokeWidth={1.8} />
+              ) : (
+                <Menu size={20} strokeWidth={1.8} />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* МОБИЛЬНОЕ МЕНЮ */}
+      {searchOpen && (
+        <div className="border-t">
+          <div className="main-layout">
+            <div className="content-layout py-3">
+              <Search onClose={() => setSearchOpen(false)} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {mobileOpen && (
-        <div className="md:hidden border-t bg-background px-4 py-4 space-y-1">
-          {/* Услуги */}
-          <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {t("nav.services")}
-          </p>
-          {siteConfig.services.flatMap((cat) =>
-            cat.pages.map((page) => (
-              <Link
-                key={page.slug}
-                href={`/services/${cat.slug}/${page.slug}` as never}
-                className="block px-3 py-2 text-sm rounded-lg hover:bg-accent"
-                onClick={() => setMobileOpen(false)}
+        <div className="md:hidden border-t">
+          <div className="main-layout">
+            <div className="content-layout py-4 flex flex-col gap-0">
+              <button
+                onClick={() => {
+                  setSearchOpen((v) => !v);
+                  setMobileOpen(false);
+                }}
+                className="flex items-center gap-2 text-[13px] text-muted hover:text-foreground px-1 py-2.5 transition-colors w-full bg-transparent border-none cursor-pointer"
               >
-                {t(page.titleKey as never)}
-              </Link>
-            ))
-          )}
-          <div className="border-t my-2" />
-          {/* Остальные */}
-          {siteConfig.nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href as never}
-              className="block px-3 py-2 text-sm rounded-lg hover:bg-accent"
-              onClick={() => setMobileOpen(false)}
-            >
-              {t(item.titleKey as never)}
-            </Link>
-          ))}
+                <SearchIcon size={15} strokeWidth={1.8} />
+                Поиск
+              </button>
+
+              <div className="border-t my-2" />
+
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted/50 px-1 py-2">
+                Услуги
+              </p>
+              {siteConfig.services.map((cat) => (
+                <Link
+                  key={cat.slug}
+                  href={`/${locale}/services/${cat.slug}`}
+                  onClick={closeAll}
+                  className="text-[13px] text-muted hover:text-foreground px-1 py-2 transition-colors"
+                >
+                  {tr(cat.titleKey)}
+                </Link>
+              ))}
+
+              <div className="border-t my-2" />
+
+              {[
+                { href: `/${locale}/contacts`, label: tr("nav.contacts") },
+                { href: `/${locale}/about`, label: tr("nav.about") },
+                { href: `/${locale}/resources`, label: tr("nav.resources") },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={closeAll}
+                  className="text-[13px] text-muted hover:text-foreground px-1 py-2 transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              <div className="border-t mt-2 pt-4 flex items-center justify-between">
+                <div className="flex gap-3">
+                  {siteConfig.locales.map((loc: Loc) => (
+                    <Link
+                      key={loc}
+                      href={pathname.replace(`/${locale}`, `/${loc}`)}
+                      onClick={closeAll}
+                      className={cn(
+                        "text-[12px]",
+                        loc === locale ? "font-semibold" : "text-muted/40",
+                      )}
+                    >
+                      {loc.toUpperCase()}
+                    </Link>
+                  ))}
+                </div>
+                <Button
+                  asChild
+                  className="h-8 px-4 text-[13px] rounded-none bg-bb text-ww font-normal"
+                >
+                  <Link href={`/${locale}/contacts`} onClick={closeAll}>
+                    Связаться
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </header>
-  );
-}
-
-// ============================================================
-// ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА
-// ============================================================
-function LocaleSwitcher() {
-  const locale = useLocale();
-  const pathname = usePathname();
-
-  const localeLabels: Record<string, string> = {
-    ru: "RU",
-    en: "EN",
-    kk: "KK",
-    zh: "中",
-  };
-
-  return (
-    <div className="flex items-center gap-1 text-xs">
-      {siteConfig.locales.map((loc) => (
-        <Link
-          key={loc}
-          href={pathname as never}
-          locale={loc}
-          className={`px-2 py-1 rounded transition-colors ${
-            loc === locale
-              ? "bg-primary text-primary-foreground font-medium"
-              : "hover:bg-accent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {localeLabels[loc]}
-        </Link>
-      ))}
-    </div>
   );
 }
