@@ -20,13 +20,6 @@ export interface ServiceCategory {
 
 export type ServiceCategorySlug = ServiceCategory["slug"];
 export type ServiceTypeSlug = ServiceType["slug"];
-export type ServiceId = `${ServiceCategorySlug}/${ServiceTypeSlug}`;
-
-export interface ServiceLookup {
-  serviceId: ServiceId;
-  category: ServiceCategory;
-  type: ServiceType;
-}
 
 export const servicesHierarchy: ServiceCategory[] = [
   {
@@ -354,7 +347,11 @@ export function getAllTypePaths(): { category: string; type: string }[] {
   );
 }
 
-export function getServiceById(serviceId: string): ServiceLookup | null {
+export function getServiceById(serviceId: string): {
+  serviceId: `${string}/${string}`;
+  category: ServiceCategory;
+  type: ServiceType;
+} | null {
   const [categorySlug, typeSlug] = serviceId.split("/");
 
   if (!categorySlug || !typeSlug) {
@@ -369,7 +366,7 @@ export function getServiceById(serviceId: string): ServiceLookup | null {
   }
 
   return {
-    serviceId: `${category.slug}/${type.slug}` as ServiceId,
+    serviceId: `${category.slug}/${type.slug}`,
     category,
     type,
   };
