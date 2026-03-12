@@ -29,8 +29,8 @@ export async function generateMetadata({
   const tr = (key: string) => t(key as Parameters<typeof t>[0]);
 
   return {
-    title: tr(categoryData.titleKey),
-    description: tr(categoryData.descriptionKey),
+    title: tr(categoryData.seoTitleKey),
+    description: tr(categoryData.seoDescriptionKey),
   };
 }
 

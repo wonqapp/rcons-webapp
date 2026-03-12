@@ -33,8 +33,8 @@ export async function generateMetadata({ params }: TypePageProps): Promise<Metad
   const tr = (key: string) => t(key as Parameters<typeof t>[0]);
 
   return {
-    title: tr(typeData.titleKey),
-    description: tr(typeData.descriptionKey),
+    title: tr(typeData.seoTitleKey),
+    description: tr(typeData.seoDescriptionKey),
   };
 }
 
@@ -59,7 +59,7 @@ export default async function ServiceTypePage({ params }: TypePageProps) {
       return {
         label: match ? match[1] : tier.label,
         hint: match ? match[2] : undefined,
-        price: formatPrice(tier.price, tier.model),
+        price: formatPrice(tier),
       };
     }) ?? [];
 

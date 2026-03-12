@@ -20,7 +20,7 @@ export async function generateMetadata({
 
   return {
     title: t("nav.services"),
-    description: t("pages.home.desc"),
+    description: t("pages.services.desc"),
   };
 }
 
