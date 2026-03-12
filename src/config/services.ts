@@ -1,34 +1,50 @@
 // src/config/services.ts
 // ============================================================
-// ПОЛНЫЙ СТЕК УСЛУГ — 4 уровня иерархии
-//
-// Уровень 1: Category   → slug категории     (audit, tax, ...)
-// Уровень 2: Type       → slug типа/раздела  (rsbu, ifrs, ...)
-// Уровень 3: Service    → id секции на стр.  (mandatory-audit, ...)
-// Уровень 4: Detail     → подпункты/описание (в descriptionKey)
-//
-// URL: /services/[category]/[type]#[service-id]
+// ИЕРАРХИЯ УСЛУГ
+// URL: /services/[category]/[type]
 // ============================================================
-
-// ── ТИПЫ ──────────────────────────────────────────────────
-// src/config/services.ts
-// src/config/services.ts
 
 export interface ServiceType {
   slug: string;
+  serviceId: ServiceId;
   titleKey: string;
   descriptionKey: string;
+  seoTitleKey: string;
+  seoDescriptionKey: string;
+  searchKeywordsRu: string[];
+  intentTags: string[];
+  industryTags: string[];
 }
 
 export interface ServiceCategory {
   slug: string;
   titleKey: string;
   descriptionKey: string;
+  seoTitleKey: string;
+  seoDescriptionKey: string;
   icon: string;
   types: ServiceType[];
 }
 
-export const servicesHierarchy: ServiceCategory[] = [
+export type ServiceId = `${string}/${string}`;
+export type ServiceCategorySlug = ServiceCategory["slug"];
+export type ServiceTypeSlug = ServiceType["slug"];
+
+interface RawServiceType {
+  slug: string;
+  titleKey: string;
+  descriptionKey: string;
+}
+
+interface RawServiceCategory {
+  slug: string;
+  titleKey: string;
+  descriptionKey: string;
+  icon: string;
+  types: RawServiceType[];
+}
+
+const servicesHierarchyRaw: RawServiceCategory[] = [
   {
     slug: "audit",
     titleKey: "services.audit.title",
@@ -150,11 +166,6 @@ export const servicesHierarchy: ServiceCategory[] = [
         slug: "intangibles",
         titleKey: "services.valuation.intangibles.title",
         descriptionKey: "services.valuation.intangibles.desc",
-      },
-      {
-        slug: "ma-valuation",
-        titleKey: "services.valuation.ma-valuation.title",
-        descriptionKey: "services.valuation.ma-valuation.desc",
       },
       {
         slug: "real-estate",
@@ -323,36 +334,145 @@ export const servicesHierarchy: ServiceCategory[] = [
   },
 ];
 
-// ─── Поисковый индекс ────────────────────────────────────────
-export const searchIndex = servicesHierarchy.flatMap((cat) =>
-  cat.types.map((type) => ({
+const CATEGORY_INTENT_TAGS: Record<string, string[]> = {
+  audit: ["аудиторское заключение", "обязательный аудит", "307-фз"],
+  tax: ["налоговые риски", "сопровождение фнс", "налоговый консалтинг"],
+  valuation: ["отчёт об оценке", "рыночная стоимость", "оценка активов"],
+  "due-diligence": ["due diligence", "m&a", "проверка актива"],
+  outsourcing: ["бухгалтерский аутсорсинг", "зарплатный проект", "учёт"],
+  "financial-consulting": ["финансовая модель", "бюджетирование", "финансовый анализ"],
+  legal: ["юридическое сопровождение", "арбитраж", "корпоративное право"],
+};
+
+const CATEGORY_INDUSTRY_TAGS: Record<string, string[]> = {
+  audit: ["финансы", "корпоративный сектор", "госсектор"],
+  tax: ["налоги", "корпоративный сектор", "экспорт"],
+  valuation: ["недвижимость", "производство", "m&a"],
+  "due-diligence": ["инвестиции", "слияния и поглощения", "финансы"],
+  outsourcing: ["малый бизнес", "средний бизнес", "торговля"],
+  "financial-consulting": ["финансы", "инвестпроекты", "банки"],
+  legal: ["корпоративное право", "судебная практика", "банкротство"],
+};
+
+function buildBaseKeywords(categorySlug: string, typeSlug: string): string[] {
+  return [
+    categorySlug,
+    typeSlug,
+    categorySlug.replaceAll("-", " "),
+    typeSlug.replaceAll("-", " "),
+    `${categorySlug} ${typeSlug}`.replaceAll("-", " "),
+  ];
+}
+
+function dedupe(values: string[]): string[] {
+  return Array.from(new Set(values.map((v) => v.trim()).filter(Boolean)));
+}
+
+function enrichServiceCategory(rawCategory: RawServiceCategory): ServiceCategory {
+  const categoryIntentTags = CATEGORY_INTENT_TAGS[rawCategory.slug] ?? [];
+  const categoryIndustryTags = CATEGORY_INDUSTRY_TAGS[rawCategory.slug] ?? [];
+
+  return {
+    ...rawCategory,
+    seoTitleKey: rawCategory.titleKey,
+    seoDescriptionKey: rawCategory.descriptionKey,
+    types: rawCategory.types.map((rawType) => {
+      const serviceId = `${rawCategory.slug}/${rawType.slug}` as ServiceId;
+      return {
+        ...rawType,
+        serviceId,
+        seoTitleKey: rawType.titleKey,
+        seoDescriptionKey: rawType.descriptionKey,
+        searchKeywordsRu: dedupe([
+          ...buildBaseKeywords(rawCategory.slug, rawType.slug),
+          ...categoryIntentTags,
+        ]),
+        intentTags: categoryIntentTags,
+        industryTags: categoryIndustryTags,
+      };
+    }),
+  };
+}
+
+export const servicesHierarchy: ServiceCategory[] = servicesHierarchyRaw.map(enrichServiceCategory);
+
+export interface ServiceSearchIndexItem {
+  titleKey: string;
+  descriptionKey: string;
+  href: string;
+  category: string;
+  categoryTitleKey: string;
+  type: string;
+  serviceId: ServiceId;
+  searchKeywordsRu: string[];
+  intentTags: string[];
+  industryTags: string[];
+  tags: string[];
+  entityType: "service";
+}
+
+export const searchIndex: ServiceSearchIndexItem[] = servicesHierarchy.flatMap((category) =>
+  category.types.map((type) => ({
     titleKey: type.titleKey,
     descriptionKey: type.descriptionKey,
-    href: `/services/${cat.slug}/${type.slug}`,
-    category: cat.slug,
-    categoryTitleKey: cat.titleKey,
+    href: `/services/${category.slug}/${type.slug}`,
+    category: category.slug,
+    categoryTitleKey: category.titleKey,
     type: type.slug,
-    tags: [] as string[],
+    serviceId: type.serviceId,
+    searchKeywordsRu: type.searchKeywordsRu,
+    intentTags: type.intentTags,
+    industryTags: type.industryTags,
+    tags: dedupe([...type.searchKeywordsRu, ...type.intentTags, ...type.industryTags]),
+    entityType: "service",
   })),
 );
 
-// ─── Хелперы ────────────────────────────────────────────────
-export function getCategoryBySlug(slug: string): ServiceCategory | undefined {
-  return servicesHierarchy.find((c) => c.slug === slug);
+export function getCategoryBySlug(slug: string): ServiceCategory | null {
+  return servicesHierarchy.find((category) => category.slug === slug) ?? null;
 }
 
 export function getTypeBySlug(
   categorySlug: string,
   typeSlug: string,
-): ServiceType | undefined {
-  return getCategoryBySlug(categorySlug)?.types.find(
-    (t) => t.slug === typeSlug,
+): ServiceType | null {
+  return (
+    getCategoryBySlug(categorySlug)?.types.find((type) => type.slug === typeSlug) ??
+    null
   );
 }
 
-// Нужен для generateStaticParams в [type]/page.tsx
+export function getServiceById(serviceId: string): {
+  serviceId: ServiceId;
+  category: ServiceCategory;
+  type: ServiceType;
+} | null {
+  const [categorySlug, typeSlug] = serviceId.split("/");
+
+  if (!categorySlug || !typeSlug) {
+    return null;
+  }
+
+  const category = getCategoryBySlug(categorySlug);
+  const type = getTypeBySlug(categorySlug, typeSlug);
+
+  if (!category || !type) {
+    return null;
+  }
+
+  return {
+    serviceId: type.serviceId,
+    category,
+    type,
+  };
+}
+
+export function getAllCategoryPaths(): { category: string }[] {
+  return servicesHierarchy.map((category) => ({ category: category.slug }));
+}
+
 export function getAllTypePaths(): { category: string; type: string }[] {
-  return servicesHierarchy.flatMap((cat) =>
-    cat.types.map((type) => ({ category: cat.slug, type: type.slug })),
+  return servicesHierarchy.flatMap((category) =>
+    category.types.map((type) => ({ category: category.slug, type: type.slug })),
   );
 }

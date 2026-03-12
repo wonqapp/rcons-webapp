@@ -1,104 +1,89 @@
-// src/app/[locale]/services/[category]/page.tsx
-// ============================================================
-// СТРАНИЦА КАТЕГОРИИ (напр. /services/audit)
-// Показывает все типы внутри категории
-// ============================================================
-
-// src/app/[locale]/services/[category]/page.tsx
-import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { siteConfig } from "@/config";
-import { getCategoryBySlug } from "@/config/services";
+import { getAllCategoryPaths, getCategoryBySlug } from "@/config/services";
 
-interface Props {
-  params: Promise<{ locale: string; category: string; type: string }>;
+interface CategoryPageProps {
+  params: Promise<{ locale: string; category: string }>;
 }
 
-export default async function TypePage({ params }: Props) {
-  const { locale, category, type } = await params;
+export async function generateStaticParams() {
+  return siteConfig.locales.flatMap((locale) =>
+    getAllCategoryPaths().map(({ category }) => ({ locale, category })),
+  );
+}
+
+export async function generateMetadata({
+  params,
+}: CategoryPageProps): Promise<Metadata> {
+  const { locale, category } = await params;
+  const t = await getTranslations({ locale });
+  const categoryData = getCategoryBySlug(category);
+
+  if (!categoryData) {
+    return {};
+  }
+
+  const tr = (key: string) => t(key as Parameters<typeof t>[0]);
+
+  return {
+    title: tr(categoryData.seoTitleKey),
+    description: tr(categoryData.seoDescriptionKey),
+  };
+}
+
+export default async function ServicesCategoryPage({ params }: CategoryPageProps) {
+  const { locale, category } = await params;
   setRequestLocale(locale);
 
-  const catData = getCategoryBySlug(category);
-  const typeData = getTypeBySlug(category, type);
-  const priceData = getPricing(category, type);
-
-  if (!catData || !typeData) notFound();
+  const categoryData = getCategoryBySlug(category);
+  if (!categoryData) {
+    notFound();
+  }
 
   const t = await getTranslations({ locale });
-
-  // Трансформация данных из конфига под интерфейс PriceCard
-  const tiers =
-    priceData?.tiers.map((tier) => {
-      // Извлекаем текст в скобках для hint, если он есть
-      const match = tier.label.match(/(.*)\s\((.*)\)/);
-      return {
-        label: match ? match[1] : tier.label,
-        hint: match ? match[2] : undefined,
-        price: formatPrice(tier.price, tier.model),
-      };
-    }) || [];
+  const tr = (key: string) => t(key as Parameters<typeof t>[0]);
 
   return (
-    <main className="main-layout pt-10 pb-24">
-      {/* Hero Section */}
-      <section className="relative w-full aspect-[21/9] md:aspect-[3/1] overflow-hidden bg-zinc-900 mb-16 shadow-2xl">
-        {/* Градиент должен быть absolute, чтобы не занимать место в потоке */}
-        <div className="absolute inset-0 opacity-40 bg-gradient-to-tr from-black to-transparent z-0" />
+    <main className="max-w-6xl mx-auto px-6 py-10">
+      <nav className="flex items-center gap-2 text-sm text-[#a8a49d] mb-10">
+        <Link
+          href={`/${locale}/services`}
+          className="hover:text-[#1a1a18] transition-colors"
+        >
+          {t("nav.services")}
+        </Link>
+        <span>/</span>
+        <span className="text-[#1a1a18]">{tr(categoryData.titleKey)}</span>
+      </nav>
 
-        {/* Контентный слой */}
-        <div className="relative z-10 h-full flex flex-col p-10 md:p-20 justify-between">
-          <nav className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-white/60">
-            <Link
-              href={`/${locale}`}
-              className="hover:text-white transition-colors"
-            >
-              Главная
-            </Link>
-            <span>/</span>
-            <Link
-              href={`/${locale}/services`}
-              className="hover:text-white transition-colors"
-            >
-              Услуги
-            </Link>
-            <span>/</span>
-            <Link
-              href={`/${locale}/services/${category}`}
-              className="hover:text-white transition-colors"
-            >
-              {t(catData.titleKey as any)}
-            </Link>
-          </nav>
+      <h1 className="text-5xl font-bold text-[#1a1a18] leading-[1.05] tracking-tight mb-10">
+        {tr(categoryData.titleKey)}
+      </h1>
+      <p className="text-base text-[#6b6860] leading-relaxed max-w-2xl mb-14">
+        {tr(categoryData.descriptionKey)}
+      </p>
 
-          <h1 className="text-3xl md:text-5xl font-serif text-white max-w-3xl leading-[1.15] tracking-tight">
-            {t(typeData.titleKey as any)}
-          </h1>
-        </div>
-      </section>
-
-      <div className="grid lg:grid-cols-[1fr_300px] gap-16 items-start">
-        <div className="space-y-12">
-          {/* Description */}
-          <div className="prose prose-zinc max-w-none">
-            <p className="text-lg text-[#1c1c1a] leading-relaxed font-sans opacity-90">
-              {t(typeData.descriptionKey as any)}
-            </p>
-          </div>
-
-          {/* Price Component */}
-          {tiers.length > 0 && (
-            <PriceCard
-              tiers={tiers}
-              note={priceData?.note}
-              ctaLabel="Получить расчёт"
-            />
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <ServiceSidebar category={catData} activeTypeSlug={type} />
+      <div className="border-t border-[#1a1a18]/20">
+        {categoryData.types.map((serviceType) => (
+          <Link
+            key={serviceType.slug}
+            href={`/${locale}/services/${categoryData.slug}/${serviceType.slug}`}
+            className="group grid grid-cols-[1fr_auto] items-baseline py-5 border-b border-[#e8e6e1] gap-8 hover:border-[#1a1a18]/30 transition-colors"
+          >
+            <div>
+              <p className="text-base text-[#1a1a18]">{tr(serviceType.titleKey)}</p>
+              <p className="text-sm text-[#a8a49d] mt-0.5 line-clamp-1">
+                {tr(serviceType.descriptionKey)}
+              </p>
+            </div>
+            <span className="text-[#a8a49d] group-hover:text-[#1a1a18] transition-colors text-sm">
+              →
+            </span>
+          </Link>
+        ))}
       </div>
     </main>
   );

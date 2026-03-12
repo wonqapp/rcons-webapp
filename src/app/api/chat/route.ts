@@ -1,24 +1,9 @@
-// src/app/api/chat/route.ts
-// ============================================================
-// API МАРШРУТ: ИИ-помощник
-// Используем OpenAI-совместимый API (YandexGPT или OpenAI)
-//
-// Для YandexGPT:
-//   YANDEX_GPT_API_KEY=your_key  YANDEX_FOLDER_ID=your_folder
-//   AI_PROVIDER=yandex
-//
-// Для OpenAI:
-//   OPENAI_API_KEY=sk-xxx
-//   AI_PROVIDER=openai (или оставить пустым)
-// ============================================================
-// src/app/api/chat/route.ts
-// src/app/api/chat/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { buildChatContext, containsLegalRiskQuestion } from "@/lib/chat-context";
 
 const YANDEX_API_URL =
   "https://llm.api.cloud.yandex.net/foundationModels/v1/completion";
 
-// ─── Rate limiting для чата ──────────────────────────────────
 const chatRl = new Map<string, { count: number; reset: number }>();
 
 function rateLimit(ip: string): boolean {
@@ -28,37 +13,40 @@ function rateLimit(ip: string): boolean {
     chatRl.set(ip, { count: 1, reset: now + 60_000 });
     return true;
   }
-  if (entry.count >= 20) return false; // 20 сообщений в минуту
-  entry.count++;
+
+  if (entry.count >= 20) return false;
+  entry.count += 1;
   return true;
 }
-
-const SYSTEM_PROMPT = `Ты — профессиональный помощник аудиторско-консалтинговой компании RCONS (rcons.ru).
-
-Компетенции RCONS:
-— Аудит: обязательный по РСБУ (ООО, АО, ПАО, ГУП, МУП, НКО, застройщики 214-ФЗ), инициативный, налоговый, ПИФ, пенсионные накопления
-— Налоги: консалтинг, абонемент, предпроверочный анализ, сопровождение проверок ФНС, досудебное обжалование, возмещение НДС, 3-НДФЛ, КИК
-— Оценка: бизнеса, акций, долей, НМА, недвижимости, земли, транспорта, оборудования, кадастровая стоимость, ущерб
-— Due Diligence: финансовый, налоговый, юридический, операционный, комплексный (M&A, инвестор, кредитование)
-— Аутсорсинг учёта: полное ведение, зарплата, восстановление, нулевая отчётность, ФСБУ
-— Финансовый консалтинг: анализ, бизнес-планирование, моделирование, управленческая отчётность
-— Юридические услуги: аутсорсинг, арбитраж, банкротство, корпоративное право
-
-Правила:
-1. Отвечай кратко и по делу (3–5 предложений максимум)
-2. Если вопрос выходит за рамки компетенции RCONS — вежливо скажи об этом
-3. Для срочных вопросов рекомендуй: info@rcons.ru
-4. Отвечай на языке вопроса
-5. Не придумывай цены и сроки — направляй к менеджеру`;
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
 
+function buildSystemPrompt(input: string, contextSummary: string): string {
+  const legalRiskDisclaimer = containsLegalRiskQuestion(input)
+    ? "Вопрос содержит правовой/рисковый контекст: добавь дисклеймер, что это не индивидуальная юридическая/налоговая консультация."
+    : "Если вопрос затрагивает право/налоги, добавь краткий дисклеймер."
+
+  return `Ты — помощник аудиторско-консалтинговой компании RCONS.
+
+Контекст сайта (только внутренние данные):
+${contextSummary}
+
+Правила ответа:
+1) Отвечай на языке пользователя, кратко (до 6 предложений).
+2) Не придумывай цены/сроки, используй только контекст выше.
+3) Не давай инструкций по обходу закона, сокрытию налогов или иным противоправным действиям.
+4) ${legalRiskDisclaimer}
+5) Если данных недостаточно — честно скажи и предложи написать на info@rcons.ru.`;
+}
+
 export async function POST(request: NextRequest) {
   const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown";
 
   if (!rateLimit(ip)) {
     return NextResponse.json(
@@ -68,26 +56,26 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const rawMessages: unknown[] = Array.isArray(body?.messages)
-      ? body.messages
-      : [];
+    const body = (await request.json()) as {
+      messages?: unknown[];
+      pathname?: string;
+    };
 
-    // Лимит истории и длины сообщений
+    const rawMessages = Array.isArray(body?.messages) ? body.messages : [];
+
     const messages: ChatMessage[] = rawMessages
       .filter(
         (m): m is ChatMessage =>
-          (typeof m === "object" &&
-            m !== null &&
-            "role" in m &&
-            "content" in m &&
-            (m as ChatMessage).role === "user") ||
-          (m as ChatMessage).role === "assistant",
+          typeof m === "object" &&
+          m !== null &&
+          "role" in m &&
+          "content" in m &&
+          ((m as ChatMessage).role === "user" || (m as ChatMessage).role === "assistant"),
       )
-      .slice(-10) // последние 10 сообщений
+      .slice(-10)
       .map((m) => ({
         role: m.role,
-        content: String(m.content).slice(0, 1000), // макс 1000 символов на сообщение
+        content: String(m.content).slice(0, 1200),
       }));
 
     if (messages.length === 0) {
@@ -95,12 +83,32 @@ export async function POST(request: NextRequest) {
     }
 
     if (!process.env.YANDEX_API_KEY || !process.env.YANDEX_FOLDER_ID) {
-      console.error("Yandex AI not configured");
       return NextResponse.json(
         { error: "ИИ-помощник временно недоступен" },
         { status: 503 },
       );
     }
+
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+    const chatContext = buildChatContext(lastUserMessage, body?.pathname);
+
+    const systemPrompt = buildSystemPrompt(lastUserMessage, chatContext.summary);
+
+    const yandexPayload = {
+      modelUri: `gpt://${process.env.YANDEX_FOLDER_ID}/yandexgpt/latest`,
+      completionOptions: {
+        stream: false,
+        temperature: 0.25,
+        maxTokens: 550,
+      },
+      messages: [
+        { role: "system", text: systemPrompt },
+        ...messages.map((m) => ({
+          role: m.role,
+          text: m.content,
+        })),
+      ],
+    };
 
     const response = await fetch(YANDEX_API_URL, {
       method: "POST",
@@ -109,46 +117,36 @@ export async function POST(request: NextRequest) {
         Authorization: `Api-Key ${process.env.YANDEX_API_KEY}`,
         "x-folder-id": process.env.YANDEX_FOLDER_ID,
       },
-      body: JSON.stringify({
-        modelUri: `gpt://${process.env.YANDEX_FOLDER_ID}/yandexgpt-lite`,
-        completionOptions: {
-          stream: false,
-          temperature: 0.3,
-          maxTokens: 600,
-        },
-        messages: [
-          { role: "system", text: SYSTEM_PROMPT },
-          ...messages.map((m) => ({
-            role: m.role === "assistant" ? "assistant" : "user",
-            text: m.content,
-          })),
-        ],
-      }),
-      signal: AbortSignal.timeout(15_000), // таймаут 15 секунд
+      body: JSON.stringify(yandexPayload),
+      cache: "no-store",
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Yandex API error:", response.status, errText);
+      console.error("YandexGPT error:", response.status, errText);
       return NextResponse.json(
-        { error: "Ошибка ИИ-сервиса. Попробуйте позже." },
+        { error: "Ошибка сервиса ИИ" },
         { status: 502 },
       );
     }
 
-    const data = await response.json();
-    const text: string =
-      data?.result?.alternatives?.[0]?.message?.text ??
-      "Не удалось получить ответ.";
+    const data = (await response.json()) as {
+      result?: {
+        alternatives?: Array<{
+          message?: { text?: string };
+        }>;
+      };
+    };
 
-    return NextResponse.json({ content: text });
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === "TimeoutError") {
-      return NextResponse.json(
-        { error: "Время ожидания истекло. Попробуйте ещё раз." },
-        { status: 504 },
-      );
-    }
+    const content =
+      data?.result?.alternatives?.[0]?.message?.text?.trim() ||
+      "Извините, я не смог сформировать ответ. Напишите на info@rcons.ru.";
+
+    return NextResponse.json({
+      content,
+      matchedServiceIds: chatContext.matchedServiceIds,
+    });
+  } catch (error) {
     console.error("Chat API error:", error);
     return NextResponse.json(
       { error: "Внутренняя ошибка сервера" },
