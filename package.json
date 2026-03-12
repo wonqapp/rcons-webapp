@@ -38,4 +38,7 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   }
+},
+"overrides": {
+  "@swc/helpers": "0.5.15"
 }
